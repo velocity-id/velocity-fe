@@ -9,13 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { CommonHeader } from "@/components/common/common-header"
 import { CommonAlertDialog } from "@/components/common/alert-dialog"
-
-type CampaignForm = {
-  name: string
-  objective: string
-  status: string
-  specialAdCategories: string
-}
+import { createCampaigns, CreateCampaignsResult } from "@/features/campaign/api"
+import { CampaignForm, CreateCampaignResponse } from "@/features/campaign/type"
 
 export default function CampaignScreen() {
   const [forms, setForms] = useState<CampaignForm[]>([
@@ -40,35 +35,25 @@ export default function CampaignScreen() {
   }
 
   const handleSubmitAll = async () => {
-    const results: any[] = []
+    const results: CreateCampaignsResult = await createCampaigns(forms)
+    console.log("Campaign creation results:", results)
 
-    for (const form of forms) {
-      const body = new FormData()
-      body.append("name", form.name)
-      body.append("objective", form.objective)
-      body.append("status", form.status)
-      body.append("special_ad_categories", form.specialAdCategories)
-      body.append("access_token", process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN as string)
-
-      const res = await fetch(
-        `https://graph.facebook.com/v23.0/act_${process.env.NEXT_PUBLIC_AD_ACCOUNT_ID}/campaigns`,
-        {
-          method: "POST",
-          body,
-        }
-      )
-
-      const data = await res.json()
-      results.push(data)
-    }
-    if (results) {
+    if (results.success) {
       setDialog({
         open: true,
         title: "Success",
         description: "All campaigns created successfully.",
         type: "success",
       })
+    } else {
+      setDialog({
+        open: true,
+        title: "Error",
+        description: results.errors?.[0] || "An error occurred while creating campaigns.",
+        type: "error",
+      })
     }
+
   }
 
   return (
@@ -78,7 +63,6 @@ export default function CampaignScreen() {
         subtitle="Create multiple ad campaigns with ease using our intuitive form interface."
         extraActions={[
           <Button onClick={handleAddForm}>+ Campaign</Button>
-
         ]}
       />
       <Separator />
