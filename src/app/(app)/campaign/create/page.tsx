@@ -8,24 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { CommonHeader } from "@/components/common/common-header"
-import { CommonAlertDialog } from "@/components/common/alert-dialog"
 import { CampaignForm, CreateCampaignResponse } from "@/features/campaign/type"
 import { createCampaign } from "@/features/campaign/api"
 import { useLoading } from "@/hooks/use-loading"
+import { useAlert } from "@/hooks/use-alert"
+
 
 
 export default function CampaignScreen() {
+  const { showAlert } = useAlert()
   const { setLoading } = useLoading()
   const [forms, setForms] = useState<CampaignForm[]>([
     { name: "", objective: "", status: "", specialAdCategories: "NONE" },
   ])
-
-  const [dialog, setDialog] = useState({
-    open: false,
-    title: "",
-    description: "",
-    type: "info" as "success" | "warning" | "error" | "info",
-  })
 
   const handleChange = (index: number, field: keyof CampaignForm, value: string) => {
     const newForms = [...forms]
@@ -71,28 +66,16 @@ export default function CampaignScreen() {
       console.log("Campaign creation results:", results)
 
       if (errors.length === 0) {
-        setDialog({
-          open: true,
-          title: "Success",
-          description: "All campaigns created successfully.",
-          type: "success",
-        })
+        showAlert("Success", "All campaigns created successfully.", "success")
+
       } else {
-        setDialog({
-          open: true,
-          title: "Error",
-          description: "An error occurred while creating campaigns.",
-          type: "error",
-        })
+        showAlert("Error", "An error occurred while creating campaigns.", "error")
+
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      setDialog({
-        open: true,
-        title: "Error",
-        description: msg,
-        type: "error",
-      })
+      showAlert("Error", "An error occurred while creating campaigns.", "error")
+
     } finally {
       setLoading(false)
     }
@@ -181,15 +164,6 @@ export default function CampaignScreen() {
       <Button className="w-full" onClick={handleSubmitAll}>
         Submit All Campaigns
       </Button>
-      {dialog.open && (
-        <CommonAlertDialog
-          open={dialog.open}
-          onOpenChange={(open) => setDialog((prev) => ({ ...prev, open }))}
-          title={dialog.title}
-          description={dialog.description}
-          type={dialog.type}
-        />
-      )}
     </>
   )
 }
