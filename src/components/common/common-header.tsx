@@ -21,7 +21,7 @@ export function CommonHeader({
       {/* Title Screen + subtitle + Extra Actions */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">{title}</h1>
+          <h1 className="text-2xl font-bold text-black">{title}</h1>
           {subtitle && (
             <h4 className="text-sm text-muted-foreground">{subtitle}</h4>
           )}
