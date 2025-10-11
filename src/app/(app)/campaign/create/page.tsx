@@ -11,8 +11,11 @@ import { CommonHeader } from "@/components/common/common-header"
 import { CommonAlertDialog } from "@/components/common/alert-dialog"
 import { CampaignForm, CreateCampaignResponse } from "@/features/campaign/type"
 import { createCampaign } from "@/features/campaign/api"
+import { useLoading } from "@/hooks/use-loading"
+
 
 export default function CampaignScreen() {
+  const { setLoading } = useLoading()
   const [forms, setForms] = useState<CampaignForm[]>([
     { name: "", objective: "", status: "", specialAdCategories: "NONE" },
   ])
@@ -35,6 +38,7 @@ export default function CampaignScreen() {
   }
 
   const handleSubmitAll = async () => {
+    setLoading(true, "Creating campaigns...")
     try {
       const responses = await Promise.allSettled(forms.map((form) => createCampaign(form)))
 
@@ -89,6 +93,8 @@ export default function CampaignScreen() {
         description: msg,
         type: "error",
       })
+    } finally {
+      setLoading(false)
     }
   }
 
