@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { CommonHeader } from "@/components/common/common-header"
+import { CommonAlertDialog } from "@/components/common/alert-dialog"
 
 type CampaignForm = {
   name: string
@@ -19,6 +21,13 @@ export default function CampaignScreen() {
   const [forms, setForms] = useState<CampaignForm[]>([
     { name: "", objective: "", status: "", specialAdCategories: "NONE" },
   ])
+
+  const [dialog, setDialog] = useState({
+    open: false,
+    title: "",
+    description: "",
+    type: "info" as "success" | "warning" | "error" | "info",
+  })
 
   const handleChange = (index: number, field: keyof CampaignForm, value: string) => {
     const newForms = [...forms]
@@ -52,15 +61,26 @@ export default function CampaignScreen() {
       const data = await res.json()
       results.push(data)
     }
-
-    console.log("All FB responses:", results)
-    alert(`All campaign results: ${JSON.stringify(results)}`)
+    if (results) {
+      setDialog({
+        open: true,
+        title: "Success",
+        description: "All campaigns created successfully.",
+        type: "success",
+      })
+    }
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-4">
-      <Label className="text-4xl">Velocity Melawan Managix Gacor</Label>
-      <Button onClick={handleAddForm}>+ Add Campaign Form</Button>
+    <>
+      <CommonHeader
+        title="Create Campaigns"
+        subtitle="Create multiple ad campaigns with ease using our intuitive form interface."
+        extraActions={[
+          <Button onClick={handleAddForm}>+ Campaign</Button>
+
+        ]}
+      />
       <Separator />
       {forms.map((form, idx) => (
         <Card key={idx} className="shadow-lg">
@@ -135,6 +155,15 @@ export default function CampaignScreen() {
       <Button className="w-full" onClick={handleSubmitAll}>
         Submit All Campaigns
       </Button>
-    </div>
+      {dialog.open && (
+        <CommonAlertDialog
+          open={dialog.open}
+          onOpenChange={(open) => setDialog((prev) => ({ ...prev, open }))}
+          title={dialog.title}
+          description={dialog.description}
+          type={dialog.type}
+        />
+      )}
+    </>
   )
 }

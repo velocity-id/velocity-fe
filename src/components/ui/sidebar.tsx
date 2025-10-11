@@ -3,13 +3,19 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, VariantProps } from "class-variance-authority"
-import { PanelLeftIcon } from "lucide-react"
+import { Bell, PanelLeftIcon, Settings, User } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -24,6 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useRouter } from "next/navigation"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -253,30 +260,91 @@ function Sidebar({
   )
 }
 
+type SidebarTriggerProps = React.ComponentProps<typeof Button> & {
+  userName: string;
+};
+
 function SidebarTrigger({
   className,
   onClick,
+  userName,
   ...props
-}: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+}: SidebarTriggerProps) {
+  const { toggleSidebar } = useSidebar();
+  const router = useRouter();
+  const displayName = userName?.trim() || "Account";
 
   return (
-    <Button
-      data-sidebar="trigger"
-      data-slot="sidebar-trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("size-7", className)}
-      onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
-      }}
-      {...props}
-    >
-      <PanelLeftIcon />
-      <span className="sr-only">Toggle Sidebar</span>
-    </Button>
-  )
+    <div>
+      <div className="flex items-center justify-between p-2">
+        <div className="flex items-center gap-2">
+          <Button
+            data-sidebar="trigger"
+            data-slot="sidebar-trigger"
+            variant="ghost"
+            size="icon"
+            className={cn("size-7", className)}
+            onClick={(event) => {
+              onClick?.(event);
+              toggleSidebar();
+            }}
+            {...props}
+          >
+            <PanelLeftIcon />
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+          <div className="flex items-center gap-2">
+            <img src="/your-logo.png" alt="Logo" className="h-16 w-19" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Settings */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/settings")}
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+
+          {/* Notification */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Bell className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem>No new notifications</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Account */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                <span>{displayName}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => console.log("Go to profile")}>
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                // onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <Separator />
+    </div>
+  );
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
