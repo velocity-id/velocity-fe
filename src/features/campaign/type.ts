@@ -7,13 +7,11 @@ export type CampaignForm = {
 
 export type CreateCampaignResponse = {
     id?: string
-    error?: ErrorCreateCampaignResponse
-}
-
-export type ErrorCreateCampaignResponse = {
-    message?: string,
-    type?: string,
-    code?: number,
-    error_subcode?: number,
-    fbtrace_id?: string
+    error?: {
+        message?: string,
+        type?: string,
+        code?: number,
+        error_subcode?: number,
+        fbtrace_id?: string
+    }
 }
