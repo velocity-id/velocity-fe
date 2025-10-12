@@ -14,7 +14,7 @@ export default async function Layout({ children }: React.PropsWithChildren) {
         <LoadingProvider>
           <AlertProvider>
 
-            <main className="px-10 py-5 bg-blue-50 gap-5 flex flex-col">
+            <main className="px-10 py-5  gap-5 flex flex-col">
               {children}
             </main>
           </AlertProvider>
