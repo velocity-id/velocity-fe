@@ -110,7 +110,7 @@ export default function CampaignScreen() {
                       })
                     }
                   >
-                    + Campaign
+                    Add More Campaign
                   </Button>
                 )}
               />,

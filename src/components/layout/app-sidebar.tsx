@@ -79,11 +79,10 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="text-xl font-bold">
             <Image
-              src="/ecogovern-logo.png"
-              alt="Ecogovern"
-              width={120}
+              src="/velocity-logo.png"
+              alt="Velocity"
+              width={50}
               height={40}
-              className="h-8 w-auto"
             />
           </SidebarGroupLabel>
 

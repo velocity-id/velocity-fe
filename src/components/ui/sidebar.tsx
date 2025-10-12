@@ -293,9 +293,6 @@ function SidebarTrigger({
             <PanelLeftIcon />
             <span className="sr-only">Toggle Sidebar</span>
           </Button>
-          <div className="flex items-center gap-2">
-            <img src="/your-logo.png" alt="Logo" className="h-16 w-19" />
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
