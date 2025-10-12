@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, ReactNode } from "react"
-import { CommonAlertDialog } from "@/components/common/alert-dialog"
+import { CommonAlertDialog } from "@/components/common/common-alert-dialog"
 
 type AlertType = "success" | "warning" | "error" | "info"
 
