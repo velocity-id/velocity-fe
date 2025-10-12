@@ -28,68 +28,67 @@ const CampaignSchema = Yup.object().shape({
     .min(1, "At least one campaign is required"),
 })
 
+const initialValues = {
+  campaigns: [
+    { name: "", objective: "", status: "", specialAdCategories: "NONE" } as CampaignForm,
+  ],
+}
+
 export default function CampaignScreen() {
   const { showAlert } = useAlert()
   const { setLoading } = useLoading()
-
-  const initialValues = {
-    campaigns: [
-      { name: "", objective: "", status: "", specialAdCategories: "NONE" } as CampaignForm,
-    ],
-  }
-
-  const handleSubmit = async (values: { campaigns: CampaignForm[]}) => {
-    setLoading(true, "Creating campaigns...")
-    try {
-      const responses = await Promise.allSettled(values.campaigns.map((form) => createCampaign(form)))
-
-      const results: CreateCampaignResponse[] = []
-      const errors: string[] = []
-
-      for (const res of responses) {
-        if (res.status === "fulfilled") {
-          const data = res.value
-          if (data.id) results.push(data)
-          else if (data.error) {
-            errors.push(data.error.message!)
-            results.push(data)
-          }
-        } else {
-          const msg = res.reason instanceof Error ? res.reason.message : String(res.reason)
-          errors.push(msg)
-          results.push({
-            error: {
-              message: msg,
-              type: "NetworkError",
-              code: 500,
-              error_subcode: 0,
-            },
-          })
-        }
-      }
-
-      console.log("Campaign creation results:", results)
-
-      if (errors.length === 0) {
-        showAlert("Success", "All campaigns created successfully.", "success")
-      } else {
-        showAlert("Error", "Some campaigns failed to create.", "error")
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      showAlert("Error", msg, "error")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <Formik
       initialValues={initialValues}
       validationSchema={CampaignSchema}
-      onSubmit={handleSubmit}
+      onSubmit={async (values: { campaigns: CampaignForm[] }, { resetForm }) => {
+        setLoading(true, "Creating campaigns...")
+        try {
+          const responses = await Promise.allSettled(values.campaigns.map((form) => createCampaign(form)))
+
+          const results: CreateCampaignResponse[] = []
+          const errors: string[] = []
+
+          for (const res of responses) {
+            if (res.status === "fulfilled") {
+              const data = res.value
+              if (data.id) results.push(data)
+              else if (data.error) {
+                errors.push(data.error.message!)
+                results.push(data)
+              }
+            } else {
+              const msg = res.reason instanceof Error ? res.reason.message : String(res.reason)
+              errors.push(msg)
+              results.push({
+                error: {
+                  message: msg,
+                  type: "NetworkError",
+                  code: 500,
+                  error_subcode: 0,
+                },
+              })
+            }
+          }
+
+          console.log("Campaign creation results:", results)
+
+          if (errors.length === 0) {
+            showAlert("Success", "All campaigns created successfully.", "success")
+          } else {
+            showAlert("Error", "Some campaigns failed to create.", "error")
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          showAlert("Error", msg, "error")
+        } finally {
+          setLoading(false)
+          resetForm()
+        }
+      }}
     >
-      {({ values, errors, touched, handleChange, handleBlur, setFieldValue, resetForm }) => (
+      {({ values, handleChange, handleBlur, setFieldValue }) => (
         <Form>
           <CommonHeader
             title="Create Campaigns"
