@@ -1,232 +1,212 @@
 "use client"
 
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
-import { CommonHeader } from "@/components/common/common-header"
-import { CampaignForm, CreateCampaignResponse } from "@/features/campaign/type"
-import { createCampaign } from "@/features/campaign/api"
-import { useLoading } from "@/hooks/use-loading"
-import { useAlert } from "@/hooks/use-alert"
+import { Loader2, Plus, Upload } from "lucide-react"
 
-import { Formik, Form, FieldArray, FormikErrors, ErrorMessage } from "formik"
-import * as Yup from "yup"
+export default function CampaignPage() {
+  const [loading, setLoading] = useState(true)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [budgetCost, setBudgetCost] = useState("")
+  const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"])
 
-const CampaignSchema = Yup.object().shape({
-  campaigns: Yup.array()
-    .of(
-      Yup.object().shape({
-        name: Yup.string().required("Campaign name is required"),
-        objective: Yup.string().required("Objective is required"),
-        status: Yup.string().required("Status is required"),
-        specialAdCategories: Yup.string().required("Category is required"),
-      })
-    )
-    .min(1, "At least one campaign is required"),
-})
+  const addCampaignPart = (part: string) => {
+    if (!campaignParts.includes(part)) {
+      setCampaignParts([...campaignParts, part])
+    }
+  }
+  const clearCampaignParts = () => setCampaignParts([])
 
-const initialValues = {
-  campaigns: [
-    { name: "", objective: "", status: "", specialAdCategories: "NONE" } as CampaignForm,
-  ],
-}
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+    }
+  }
 
-export default function CampaignScreen() {
-  const { showAlert } = useAlert()
-  const { setLoading } = useLoading()
+  // trigger input file lewat tombol
+  const handleChooseFile = () => {
+    document.getElementById("fileInput")?.click()
+  }
+
+
+  // simulasi loading akun
+  setTimeout(() => setLoading(false), 1500)
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={CampaignSchema}
-      onSubmit={async (values: { campaigns: CampaignForm[] }, { resetForm }) => {
-        setLoading(true, "Creating campaigns...")
-        try {
-          const responses = await Promise.allSettled(values.campaigns.map((form) => createCampaign(form)))
+    <div className="max-w-3xl mx-auto p-6">
+      <Card className="shadow-lg border">
+        <CardContent className="space-y-6 p-6">
+          {/* Ad Account */}
+          <div>
+              <h2 className="font-semibold mb-2">Ad Account</h2>
+              {loading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Loader2 className="animate-spin w-4 h-4" />
+                  Loading Ad Account...
+                </div>
+              ) : (
+                <p>Ad Account Loaded</p>
+              )}
+          </div>
 
-          const results: CreateCampaignResponse[] = []
-          const errors: string[] = []
+          <Separator />
 
-          for (const res of responses) {
-            if (res.status === "fulfilled") {
-              const data = res.value
-              if (data.id) results.push(data)
-              else if (data.error) {
-                errors.push(data.error.message!)
-                results.push(data)
-              }
-            } else {
-              const msg = res.reason instanceof Error ? res.reason.message : String(res.reason)
-              errors.push(msg)
-              results.push({
-                error: {
-                  message: msg,
-                  type: "NetworkError",
-                  code: 500,
-                  error_subcode: 0,
-                },
-              })
-            }
-          }
+          {/* Campaign Type */}
+          <div>
+              <h2 className="font-semibold mb-2">Campaign Type</h2>
+              <p className="text-sm text-gray-500 mb-2">Choosing Campaign Type</p>
+              <Button variant="outline" onClick={handleChooseFile} className="flex items-center gap-2 bg-blue-200 hover:bg-blue-100">
+                <Upload className="w-4 h-4" /> Choose File
+              </Button>
 
-          console.log("Campaign creation results:", results)
+              {/* input type file disembunyikan */}
+              <input
+                id="fileInput"
+                type="file"
+                accept=".csv,.txt,.json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
 
-          if (errors.length === 0) {
-            showAlert("Success", "All campaigns created successfully.", "success")
-          } else {
-            showAlert("Error", "Some campaigns failed to create.", "error")
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          showAlert("Error", msg, "error")
-        } finally {
-          setLoading(false)
-          resetForm()
-        }
-      }}
-    >
-      {({ values, handleChange, handleBlur, setFieldValue }) => (
-        <Form>
-          <CommonHeader
-            title="Create Campaigns"
-            subtitle="Create multiple ad campaigns with ease using our intuitive form interface."
-            extraActions={[
-              <FieldArray
-                name="campaigns"
-                key="fieldArray"
-                render={(arrayHelpers) => (
-                  <Button
-                    variant="default"
-                    type="button"
-                    onClick={() =>
-                      arrayHelpers.push({
-                        name: "",
-                        objective: "",
-                        status: "",
-                        specialAdCategories: "NONE",
-                      })
-                    }
-                  >
-                    Add More Campaign
-                  </Button>
-                )}
-              />,
-            ]}
-          />
+              {selectedFile ? (
+                <p className="text-sm text-muted-foreground">
+                  Selected: <span className="font-medium text-foreground">{selectedFile.name}</span>
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">No file selected</p>
+              )}
+          </div>
 
-          <Separator className="mb-4" />
+          <Separator />
 
-          <FieldArray
-            name="campaigns"
-            render={() =>
-              values.campaigns.map((form, idx) => (
-                <Card key={idx} className="shadow-lg mb-6">
-                  <CardHeader>
-                    <CardTitle>Campaign Form {idx + 1}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Name</Label>
-                      <Input
-                        name={`campaigns.${idx}.name`}
-                        value={form.name}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                      />
-                      <ErrorMessage
-                        name={`campaigns.${idx}.name`}
-                        component="p"
-                        className="text-red-500 text-sm"
-                      />
-                    </div>
+          {/* Objective */}
+          <div>
+              <h2 className="font-semibold mb-2">Objective</h2>
+              <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
+              <Select defaultValue="Conversions">
+                <SelectTrigger className="w-[200px] bg-blue-200">
+                  <SelectValue placeholder="Select Objective" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Conversions">Conversions</SelectItem>
+                  <SelectItem value="Traffic">Traffic</SelectItem>
+                  <SelectItem value="Awareness">Awareness</SelectItem>
+                </SelectContent>
+              </Select>
+          </div>
 
-                    <div className="space-y-2">
-                      <Label>Objective</Label>
-                      <Select
-                        value={form.objective}
-                        onValueChange={(val) =>
-                          setFieldValue(`campaigns.${idx}.objective`, val)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select objective" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="OUTCOME_TRAFFIC">Traffic</SelectItem>
-                          <SelectItem value="OUTCOME_ENGAGEMENT">Engagement</SelectItem>
-                          <SelectItem value="OUTCOME_AWARENESS">Awareness</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <ErrorMessage
-                        name={`campaigns.${idx}.objective`}
-                        component="p"
-                        className="text-red-500 text-sm"
-                      />
-                    </div>
+          <Separator />
 
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select
-                        value={form.status}
-                        onValueChange={(val) =>
-                          setFieldValue(`campaigns.${idx}.status`, val)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ACTIVE">Active</SelectItem>
-                          <SelectItem value="PAUSED">Paused</SelectItem>
-                          <SelectItem value="DELETED">Deleted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <ErrorMessage
-                        name={`campaigns.${idx}.status`}
-                        component="p"
-                        className="text-red-500 text-sm"
-                      />
-                    </div>
+          {/* Campaign Budget */}
+          <h2 className="font-semibold mb-2">Campaign Budget</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <p className="text-sm text-gray-500 mb-2">Set Campaign Budget</p>
+              <Select defaultValue="Daily Budget">
+                <SelectTrigger className="w-[160px] bg-blue-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Daily Budget">Daily Budget</SelectItem>
+                  <SelectItem value="Lifetime Budget">Lifetime Budget</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                    <div className="space-y-2">
-                      <Label>Special Ad Categories</Label>
-                      <Select
-                        value={form.specialAdCategories}
-                        onValueChange={(val) =>
-                          setFieldValue(`campaigns.${idx}.specialAdCategories`, val)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">None</SelectItem>
-                          <SelectItem value="HOUSING">Housing</SelectItem>
-                          <SelectItem value="EMPLOYMENT">Employment</SelectItem>
-                          <SelectItem value="CREDIT">Credit</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <ErrorMessage
-                        name={`campaigns.${idx}.specialAdCategories`}
-                        component="p"
-                        className="text-red-500 text-sm"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            }
-          />
+            <div className="flex flex-col justify-center">
+              <p className="text-sm text-gray-500 mb-2">Budget Cost</p>
+              <Input
+                placeholder="Enter Budget Cost"
+                value={budgetCost}
+                onChange={(e) => setBudgetCost(e.target.value)}
+                className="w-[160px] bg-blue-400 text-black"
+              />
+            </div>
+          </div>
 
-          <Separator className="mb-4" />
-          <Button type="submit" className="w-full">
-            Submit All Campaigns
-          </Button>
-        </Form>
-      )}
-    </Formik>
+          <Separator />
+
+          {/* Bid Strategy */}
+          <div>
+              <h2 className="font-semibold mb-2">Bid Strategy</h2>
+              <p className="text-sm text-gray-500 mb-2">Choose Bid Strategi</p>
+              <RadioGroup defaultValue="lowest">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="lowest" id="lowest" />
+                  <label htmlFor="lowest" className="text-sm">Lowest Cost</label>
+                </div>
+              </RadioGroup>
+          </div>
+
+          <Separator />
+
+          {/* Campaign Schedule */}
+          <div>
+              <h2 className="font-semibold mb-2">Campaign Schedule</h2>
+              <p className="text-sm text-gray-500 mb-2">Choose Campaign Schedule</p>
+              <RadioGroup defaultValue="always">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="always" id="always" />
+                  <label htmlFor="always" className="text-sm">Run ads all the time</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="schedule" id="schedule" />
+                  <label htmlFor="schedule" className="text-sm">Run ads on a schedule</label>
+                </div>
+              </RadioGroup>
+          </div>
+
+          <Separator />
+
+
+          {/* Campaign Name */}
+          <div>
+              <h2 className="font-semibold mb-2">Campaign Name</h2>
+              <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
+
+              <div className="flex flex-wrap items-center gap-2 border rounded-md p-2">
+                {campaignParts.map((part, i) => (
+                  <span key={i} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                    {part}
+                  </span>
+                ))}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => addCampaignPart("Objective")}>Objective</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addCampaignPart("Created Date")}>Created Date</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addCampaignPart("Budget Campaign Type")}>Budget Campaign Type</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addCampaignPart("Campaign Budget")}>Campaign Budget</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addCampaignPart("Campaign Bid Strategy")}>Campaign Bid Strategy</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="ghost" className="text-xs text-gray-500" onClick={clearCampaignParts}>Clear All 
+                </Button>
+              </div>
+
+              <p className="text-sm text-gray-500 mt-2">
+                Preview: lorem ipsum
+              </p>
+          </div>
+
+          <Separator />
+
+          <div className="flex justify-end">
+            <Button className="px-8">Next</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
