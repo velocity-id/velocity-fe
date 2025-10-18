@@ -12,7 +12,6 @@ import { Loader2, Plus, Upload } from "lucide-react"
 
 export default function CampaignPage() {
   const [loading, setLoading] = useState(true)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [budgetCost, setBudgetCost] = useState("")
   const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"])
 
@@ -23,25 +22,13 @@ export default function CampaignPage() {
   }
   const clearCampaignParts = () => setCampaignParts([])
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-    }
-  }
-
-  // trigger input file lewat tombol
-  const handleChooseFile = () => {
-    document.getElementById("fileInput")?.click()
-  }
-
 
   // simulasi loading akun
   setTimeout(() => setLoading(false), 1500)
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <Card className="shadow-lg border">
+    <div className="w-full">
+      <Card className="shadow-lg border w-full">
         <CardContent className="space-y-6 p-6">
           {/* Ad Account */}
           <div>
@@ -61,27 +48,16 @@ export default function CampaignPage() {
           {/* Campaign Type */}
           <div>
               <h2 className="font-semibold mb-2">Campaign Type</h2>
-              <p className="text-sm text-gray-500 mb-2">Choosing Campaign Type</p>
-              <Button variant="outline" onClick={handleChooseFile} className="flex items-center gap-2 bg-blue-200 hover:bg-blue-100">
-                <Upload className="w-4 h-4" /> Choose File
-              </Button>
-
-              {/* input type file disembunyikan */}
-              <input
-                id="fileInput"
-                type="file"
-                accept=".csv,.txt,.json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              {selectedFile ? (
-                <p className="text-sm text-muted-foreground">
-                  Selected: <span className="font-medium text-foreground">{selectedFile.name}</span>
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">No file selected</p>
-              )}
+              <p className="text-sm text-gray-500 mb-2">Choose Campaign Type</p>
+              <Select defaultValue="NONE">
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Campaign Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">NONE</SelectItem>
+                  <SelectItem value="ICO_ONLY">ICO_ONLY</SelectItem>
+                </SelectContent>
+              </Select>
           </div>
 
           <Separator />
@@ -90,14 +66,17 @@ export default function CampaignPage() {
           <div>
               <h2 className="font-semibold mb-2">Objective</h2>
               <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
-              <Select defaultValue="Conversions">
-                <SelectTrigger className="w-[200px] bg-blue-200">
+              <Select defaultValue="OUTCOME_APP_PROMOTION">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select Objective" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Conversions">Conversions</SelectItem>
-                  <SelectItem value="Traffic">Traffic</SelectItem>
-                  <SelectItem value="Awareness">Awareness</SelectItem>
+                  <SelectItem value="OUTCOME_APP_PROMOTION">App_Promotion</SelectItem>
+                  <SelectItem value="OUTCOME_AWARENESS">Awareness</SelectItem>
+                  <SelectItem value="OUTCOME_ENGAGEMENT">Engagement</SelectItem>
+                  <SelectItem value="OUTCOME_LEADS">Leads</SelectItem>
+                  <SelectItem value="OUTCOME_SALES">Sales</SelectItem>
+                  <SelectItem value="OUTCOME_TRAFFIC">Traffic</SelectItem>
                 </SelectContent>
               </Select>
           </div>
@@ -110,7 +89,7 @@ export default function CampaignPage() {
             <div className="flex flex-col">
               <p className="text-sm text-gray-500 mb-2">Set Campaign Budget</p>
               <Select defaultValue="Daily Budget">
-                <SelectTrigger className="w-[160px] bg-blue-200">
+                <SelectTrigger className="w-[160px] ">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -126,7 +105,7 @@ export default function CampaignPage() {
                 placeholder="Enter Budget Cost"
                 value={budgetCost}
                 onChange={(e) => setBudgetCost(e.target.value)}
-                className="w-[160px] bg-blue-400 text-black"
+                className="w-[160px]"
               />
             </div>
           </div>
