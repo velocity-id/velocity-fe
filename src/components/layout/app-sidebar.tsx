@@ -12,8 +12,6 @@ import {
 } from "@/components/ui/sidebar";
 import {
   Users,
-  Megaphone,
-  ShoppingBag,
   Layers,
   ChevronDown,
   ChevronRight,
@@ -24,7 +22,19 @@ import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 
-const items = [
+type SidebarItem = {
+  key: string;
+  title: string;
+  icon: React.ElementType;
+  url?: string;
+  items?: {
+    key: string;
+    title: string;
+    url: string;
+  }[];
+};
+
+const items: SidebarItem[] = [
   {
     key: "user-management",
     title: "User Management",
@@ -35,31 +45,10 @@ const items = [
     ],
   },
   {
-    key: "campaign",
-    title: "Campaign",
-    icon: Megaphone,
-    items: [
-      { key: "all-campaign", title: "All Campaigns", url: "/campaign" },
-      { key: "create-campaign", title: "Create Campaign", url: "/campaign/create" },
-    ],
-  },
-  {
-    key: "ad",
-    title: "Ad",
-    icon: ShoppingBag,
-    items: [
-      { key: "all-ads", title: "All Ads", url: "/ad" },
-      { key: "create-ad", title: "Create Ad", url: "/ad/create" },
-    ],
-  },
-  {
-    key: "ad-set",
-    title: "Ad Set",
+    key: "advert-click",
+    title: "Advert Click",
     icon: Layers,
-    items: [
-      { key: "all-ad-set", title: "All Ad Sets", url: "/ad-set" },
-      { key: "create-ad-set", title: "Create Ad Set", url: "/ad-set/create" },
-    ],
+    url: "/advert-click",
   },
 ];
 
@@ -92,44 +81,66 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => {
                 const isOpen = openGroups.includes(item.key);
+                const hasChildren = !!item.items?.length;
+
                 return (
                   <div key={item.key}>
-                    {/* Parent menu (collapsible header) */}
-                    <SidebarMenuButton
-                      className="flex items-center justify-between w-full cursor-pointer"
-                      onClick={() => toggleGroup(item.key)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.title}</span>
-                      </div>
-                      {isOpen ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </SidebarMenuButton>
+                    {/* Jika punya sub-items → collapsible */}
+                    {hasChildren ? (
+                      <>
+                        <SidebarMenuButton
+                          className="flex items-center justify-between w-full cursor-pointer"
+                          onClick={() => toggleGroup(item.key)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.title}</span>
+                          </div>
+                          {isOpen ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </SidebarMenuButton>
 
-                    {/* Sub items */}
-                    {isOpen && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {item.items.map((subItem) => (
-                          <SidebarMenuItem key={subItem.key}>
-                            <SidebarMenuButton asChild>
-                              <Link
-                                href={subItem.url}
-                                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
-                                  pathname === subItem.url
-                                    ? "bg-muted font-semibold"
-                                    : "hover:bg-accent hover:text-accent-foreground"
-                                }`}
-                              >
-                                <span>{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </div>
+                        {isOpen && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {item.items?.map((subItem) => (
+                              <SidebarMenuItem key={subItem.key}>
+                                <SidebarMenuButton asChild>
+                                  <Link
+                                    href={subItem.url}
+                                    className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                                      pathname === subItem.url
+                                        ? "bg-muted font-semibold"
+                                        : "hover:bg-accent hover:text-accent-foreground"
+                                    }`}
+                                  >
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      /* Kalau nggak punya sub-item → langsung link */
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            href={item.url!}
+                            className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                              pathname === item.url
+                                ? "bg-muted font-semibold"
+                                : "hover:bg-accent hover:text-accent-foreground"
+                            }`}
+                          >
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
                     )}
                   </div>
                 );
