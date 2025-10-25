@@ -15,6 +15,8 @@ import {
   Layers,
   ChevronDown,
   ChevronRight,
+  LucideLayoutDashboard,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,6 +38,12 @@ type SidebarItem = {
 
 const items: SidebarItem[] = [
   {
+    key: "dashboard",
+    title: "Dashboard",
+    icon: LucideLayoutDashboard,
+    url: "/dashboard",
+  },
+  {
     key: "user-management",
     title: "User Management",
     icon: Users,
@@ -49,6 +57,12 @@ const items: SidebarItem[] = [
     title: "Advert Click",
     icon: Layers,
     url: "/advert-click",
+  },
+  {
+    key: "profile",
+    title: "Profile",
+    icon: User,
+    url: "/profile",
   },
 ];
 
