@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Separator } from "@/components/ui/separator"
 import { Loader2, Plus, Upload } from "lucide-react"
 
-export default function CampaignPage() {
+export default function CreateCampaign() {
   const [loading, setLoading] = useState(true)
   const [budgetCost, setBudgetCost] = useState("")
   const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"])
@@ -180,10 +180,6 @@ export default function CampaignPage() {
           </div>
 
           <Separator />
-
-          <div className="flex justify-end">
-            <Button className="px-8">Next</Button>
-          </div>
         </CardContent>
       </Card>
     </div>

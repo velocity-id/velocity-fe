@@ -1,3 +1,5 @@
+'use client'
+
 import { useRouter } from "next/navigation"
 import { usePathname, useSearchParams } from "next/navigation"
 import qs from "qs"
