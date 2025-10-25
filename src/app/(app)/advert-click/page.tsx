@@ -17,6 +17,7 @@ import {
 import { BookUser, Check, CreditCard, Layers, ListTodo, LoaderCircleIcon, LockKeyhole, Megaphone, ShoppingBag, Target } from 'lucide-react';
 import CreateCampaign from './_components/create-campaign';
 import CreateAdSet from './_components/create-ad-set';
+import { CommonHeader } from '@/components/common/common-header';
 
 const steps = [
     { title: 'Campaign', icon: Megaphone },
@@ -29,6 +30,11 @@ export default function Component() {
 
     return (
         <div>
+            <CommonHeader
+                title='Advert Click'
+                subtitle='Kelola Campaign, Ad Set, Ad.'
+            />
+            <div className='h-10'></div>
             <Stepper
                 value={currentStep}
                 onValueChange={setCurrentStep}
