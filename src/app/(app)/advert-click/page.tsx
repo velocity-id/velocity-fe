@@ -18,6 +18,7 @@ import { BookUser, Check, CreditCard, Layers, ListTodo, LoaderCircleIcon, LockKe
 import CreateCampaign from './_components/create-campaign';
 import CreateAdSet from './_components/create-ad-set';
 import { CommonHeader } from '@/components/common/common-header';
+import CreateAd from './_components/create-ad';
 
 const steps = [
     { title: 'Campaign', icon: Megaphone },
@@ -76,7 +77,7 @@ export default function Component() {
                         <CreateAdSet />
                     </StepperContent>
                     <StepperContent key={'create-ad'} value={3} className="flex items-center justify-center">
-                        <div>ad</div>
+                        <CreateAd />
                     </StepperContent>
                 </StepperPanel>
 
@@ -98,7 +99,7 @@ export default function Component() {
                         }
                         }
                     >
-                        Next
+                        {currentStep > 2 ? 'Save' : 'Next'}
                     </Button>
                 </div>
             </Stepper>
