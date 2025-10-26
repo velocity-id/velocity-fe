@@ -26,28 +26,28 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Target, Layers, Megaphone } from "lucide-react";
+import { Target, Layers, Megaphone, TrendingUp, TrendingDown } from "lucide-react";
 
 // --- Data Dummy ---
 const stats = [
   {
     title: "Total Campaign",
     value: 24,
-    change: "+12% from last month",
+    change: -3,
     icon: <Target className="w-6 h-6 text-blue-500" />,
     bg: "bg-blue-100",
   },
   {
     title: "Total Ad",
-    value: 24,
-    change: "+12% from last month",
+    value: 48,
+    change: 8,
     icon: <Megaphone className="w-6 h-6 text-green-500" />,
     bg: "bg-green-100",
   },
   {
     title: "Total Ad set",
-    value: 24,
-    change: "+12% from last month",
+    value: 36,
+    change: 5,
     icon: <Layers className="w-6 h-6 text-purple-500" />,
     bg: "bg-purple-100",
   },
@@ -137,27 +137,42 @@ export default function DashboardPage() {
 
         {/* --- Stats Cards --- */}
         <div className="flex flex-col md:flex-row gap-4">
-          {stats.map((item, i) => (
-            <Card
-              key={i}
-              className="flex flex-row items-center justify-between p-5 w-full bg-white shadow-sm rounded-2xl"
-            >
-              <div>
-                <CardTitle className="text-lg text-slate-700">
-                  {item.title}
-                </CardTitle>
-                <p className="text-2xl font-semibold text-slate-900 mt-1">
-                  {item.value}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{item.change}</p>
-              </div>
-              <div
-                className={`rounded-xl p-3 ${item.bg} flex items-center justify-center`}
+          {stats.map((item, i) => {
+            const isPositive = item.change >= 0;
+            const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+            const trendColor = isPositive ? "text-green-500" : "text-red-500";
+
+            return (
+              <Card
+                key={i}
+                className="flex flex-row items-center justify-between p-5 w-full bg-white shadow-sm rounded-2xl"
               >
-                {item.icon}
-              </div>
-            </Card>
-          ))}
+                <div>
+                  <CardTitle className="text-lg text-slate-700">
+                    {item.title}
+                  </CardTitle>
+                  <p className="text-2xl font-semibold text-slate-900 mt-1">
+                    {item.value}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <TrendIcon className={`w-4 h-4 ${trendColor}`} />
+                    <p
+                      className={`text-sm font-medium ${
+                        isPositive ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {isPositive ? `+${item.change}%` : `${item.change}%`}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className={`rounded-xl p-3 ${item.bg} flex items-center justify-center`}
+                >
+                  {item.icon}
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
         {/* --- Chart Section --- */}
