@@ -17,18 +17,12 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Formik, Form } from "formik";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Target, Layers, Megaphone, TrendingUp, TrendingDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// --- Data Dummy ---
+// --- Data Statistik ---
 const stats = [
   {
     title: "Total Campaign",
@@ -53,16 +47,38 @@ const stats = [
   },
 ];
 
-const chartData = [
-  { name: "Mon", clicks: 100, conversions: 2500, impressions: 6000 },
-  { name: "Tue", clicks: 500, conversions: 800, impressions: 4500 },
-  { name: "Wed", clicks: 200, conversions: 7800, impressions: 10000 },
-  { name: "Thu", clicks: 3500, conversions: 5500, impressions: 7000 },
-  { name: "Fri", clicks: 6200, conversions: 9500, impressions: 9000 },
-  { name: "Sat", clicks: 4700, conversions: 7400, impressions: 5000 },
-  { name: "Sun", clicks: 5600, conversions: 2000, impressions: 4500 },
-];
+// --- Data Chart Berdasarkan View ---
+const chartDataByView = {
+  Ad: [
+    { name: "Mon", clicks: 300, conversions: 1200, impressions: 5000 },
+    { name: "Tue", clicks: 500, conversions: 800, impressions: 4000 },
+    { name: "Wed", clicks: 700, conversions: 1500, impressions: 7000 },
+    { name: "Thu", clicks: 1200, conversions: 2000, impressions: 8500 },
+    { name: "Fri", clicks: 2000, conversions: 2800, impressions: 9500 },
+    { name: "Sat", clicks: 1700, conversions: 2500, impressions: 8000 },
+    { name: "Sun", clicks: 1900, conversions: 2600, impressions: 7800 },
+  ],
+  "Ad Set": [
+    { name: "Mon", clicks: 100, conversions: 2500, impressions: 6000 },
+    { name: "Tue", clicks: 500, conversions: 800, impressions: 4500 },
+    { name: "Wed", clicks: 200, conversions: 7800, impressions: 10000 },
+    { name: "Thu", clicks: 3500, conversions: 5500, impressions: 7000 },
+    { name: "Fri", clicks: 6200, conversions: 9500, impressions: 9000 },
+    { name: "Sat", clicks: 4700, conversions: 7400, impressions: 5000 },
+    { name: "Sun", clicks: 5600, conversions: 2000, impressions: 4500 },
+  ],
+  Campaign: [
+    { name: "Mon", clicks: 500, conversions: 3000, impressions: 7000 },
+    { name: "Tue", clicks: 700, conversions: 2500, impressions: 6500 },
+    { name: "Wed", clicks: 1000, conversions: 6000, impressions: 9000 },
+    { name: "Thu", clicks: 2500, conversions: 8000, impressions: 9500 },
+    { name: "Fri", clicks: 4000, conversions: 10000, impressions: 11000 },
+    { name: "Sat", clicks: 3200, conversions: 8500, impressions: 9000 },
+    { name: "Sun", clicks: 2800, conversions: 7000, impressions: 7500 },
+  ],
+};
 
+// --- Data Campaigns ---
 const campaigns = [
   {
     name: "Summer Sale 2025",
@@ -122,14 +138,14 @@ const campaigns = [
 ];
 
 export default function DashboardPage() {
+  const [view, setView] = React.useState<"Ad" | "Ad Set" | "Campaign">("Ad Set");
+
   return (
     <div className="min-h-screen w-full bg-slate-100 flex flex-col">
       <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Dashboard Overview
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
           <p className="text-sm text-gray-500">
             Monitor your campaign performance and activities
           </p>
@@ -185,62 +201,53 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <Formik initialValues={{ view: "Ad" }} onSubmit={() => {}}>
-              {({ values, setFieldValue }) => (
-                <Form className="flex gap-2">
-                  {["Ad", "Ad Set", "Campaign"].map((v) => (
-                    <Button
-                      key={v}
-                      type="button"
-                      onClick={() => setFieldValue("view", v)}
-                      variant={values.view === v ? "default" : "outline"}
-                      className="text-sm"
-                    >
-                      {v}
-                    </Button>
-                  ))}
+            <div className="flex gap-2">
+              {["Ad", "Ad Set", "Campaign"].map((v) => (
+                <Button
+                  key={v}
+                  onClick={() => setView(v as any)}
+                  variant={view === v ? "default" : "outline"}
+                  className="text-sm"
+                >
+                  {v}
+                </Button>
+              ))}
 
-                  <Select>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Custom Range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7d">Last 7 days</SelectItem>
-                      <SelectItem value="30d">Last 30 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Form>
-              )}
-            </Formik>
+              <Select>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Custom Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">This Week</SelectItem>
+                  <SelectItem value="30d">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
 
           <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="clicks"
-                  stroke="#16a34a"
-                  dot
-                />
-                <Line
-                  type="monotone"
-                  dataKey="conversions"
-                  stroke="#ef4444"
-                  dot
-                />
-                <Line
-                  type="monotone"
-                  dataKey="impressions"
-                  stroke="#a855f7"
-                  dot
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4 }}
+                className="h-full"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartDataByView[view]}>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="clicks" stroke="#16a34a" dot />
+                    <Line type="monotone" dataKey="conversions" stroke="#ef4444" dot />
+                    <Line type="monotone" dataKey="impressions" stroke="#a855f7" dot />
+                  </LineChart>
+                </ResponsiveContainer>
+              </motion.div>
+            </AnimatePresence>
           </CardContent>
         </Card>
 
