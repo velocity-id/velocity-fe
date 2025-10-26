@@ -16,12 +16,31 @@ import { Formik, Form } from "formik";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Target, Layers, Megaphone } from "lucide-react";
 
 // --- Data Dummy ---
 const stats = [
-  { title: "Total Campaign", value: 24, change: "+12% from last month", icon: "🎯" },
-  { title: "Total Ad", value: 24, change: "+12% from last month", icon: "📣" },
-  { title: "Total Ad Set", value: 24, change: "+12% from last month", icon: "🧱" },
+  {
+    title: "Total Campaign",
+    value: 24,
+    change: "+12% from last month",
+    icon: <Target className="w-6 h-6 text-blue-500" />,
+    bg: "bg-blue-100",
+  },
+  {
+    title: "Total Ad",
+    value: 24,
+    change: "+12% from last month",
+    icon: <Megaphone className="w-6 h-6 text-green-500" />,
+    bg: "bg-green-100",
+  },
+  {
+    title: "Total Ad set",
+    value: 24,
+    change: "+12% from last month",
+    icon: <Layers className="w-6 h-6 text-purple-500" />,
+    bg: "bg-purple-100",
+  },
 ];
 
 const chartData = [
@@ -50,19 +69,23 @@ export default function DashboardPage() {
         <p className="text-sm text-gray-500">Monitor your campaign performance and activities</p>
       </div>
 
-      {/* --- Stats Cards --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((item, i) => (
-          <Card key={i} className="p-4 flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">{item.title}</CardTitle>
-              <p className="text-2xl font-semibold">{item.value}</p>
-              <p className="text-xs text-gray-500">{item.change}</p>
-            </div>
-            <div className="text-3xl">{item.icon}</div>
-          </Card>
-        ))}
+{/* --- Stats Cards --- */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  {stats.map((item, i) => (
+    <Card key={i} className="p-5 flex items-center justify-between bg-white shadow-sm">
+      <div>
+        <CardTitle className="text-lg text-slate-700">{item.title}</CardTitle>
+        <p className="text-2xl font-semibold text-slate-900 mt-1">{item.value}</p>
+        <p className="text-xs text-gray-500 mt-1">{item.change}</p>
       </div>
+      <div
+        className={`rounded-xl p-3 ${item.bg} flex items-center justify-center`}
+      >
+        {item.icon}
+      </div>
+    </Card>
+  ))}
+</div>
 
       {/* --- Chart --- */}
       <Card>
