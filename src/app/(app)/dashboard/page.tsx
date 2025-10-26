@@ -17,12 +17,24 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Target, Layers, Megaphone, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Target,
+  Layers,
+  Megaphone,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- Data Statistik ---
+// === Statistik Kartu ===
 const stats = [
   {
     title: "Total Campaign",
@@ -39,7 +51,7 @@ const stats = [
     bg: "bg-green-100",
   },
   {
-    title: "Total Ad set",
+    title: "Total Ad Set",
     value: 36,
     change: 5,
     icon: <Layers className="w-6 h-6 text-purple-500" />,
@@ -47,38 +59,64 @@ const stats = [
   },
 ];
 
-// --- Data Chart Berdasarkan View ---
-const chartDataByView = {
-  Ad: [
-    { name: "Mon", clicks: 300, conversions: 1200, impressions: 5000 },
-    { name: "Tue", clicks: 500, conversions: 800, impressions: 4000 },
-    { name: "Wed", clicks: 700, conversions: 1500, impressions: 7000 },
-    { name: "Thu", clicks: 1200, conversions: 2000, impressions: 8500 },
-    { name: "Fri", clicks: 2000, conversions: 2800, impressions: 9500 },
-    { name: "Sat", clicks: 1700, conversions: 2500, impressions: 8000 },
-    { name: "Sun", clicks: 1900, conversions: 2600, impressions: 7800 },
-  ],
-  "Ad Set": [
-    { name: "Mon", clicks: 100, conversions: 2500, impressions: 6000 },
-    { name: "Tue", clicks: 500, conversions: 800, impressions: 4500 },
-    { name: "Wed", clicks: 200, conversions: 7800, impressions: 10000 },
-    { name: "Thu", clicks: 3500, conversions: 5500, impressions: 7000 },
-    { name: "Fri", clicks: 6200, conversions: 9500, impressions: 9000 },
-    { name: "Sat", clicks: 4700, conversions: 7400, impressions: 5000 },
-    { name: "Sun", clicks: 5600, conversions: 2000, impressions: 4500 },
-  ],
-  Campaign: [
-    { name: "Mon", clicks: 500, conversions: 3000, impressions: 7000 },
-    { name: "Tue", clicks: 700, conversions: 2500, impressions: 6500 },
-    { name: "Wed", clicks: 1000, conversions: 6000, impressions: 9000 },
-    { name: "Thu", clicks: 2500, conversions: 8000, impressions: 9500 },
-    { name: "Fri", clicks: 4000, conversions: 10000, impressions: 11000 },
-    { name: "Sat", clicks: 3200, conversions: 8500, impressions: 9000 },
-    { name: "Sun", clicks: 2800, conversions: 7000, impressions: 7500 },
-  ],
+// === Data Chart Unik Tiap Kombinasi ===
+const chartDataByViewAndRange = {
+  Ad: {
+    "7d": [
+      { name: "Mon", clicks: 1200, conversions: 800, impressions: 5400 },
+      { name: "Tue", clicks: 1600, conversions: 1000, impressions: 7200 },
+      { name: "Wed", clicks: 900, conversions: 950, impressions: 6500 },
+      { name: "Thu", clicks: 1800, conversions: 1200, impressions: 8000 },
+      { name: "Fri", clicks: 2200, conversions: 1500, impressions: 9500 },
+      { name: "Sat", clicks: 1700, conversions: 1100, impressions: 8700 },
+      { name: "Sun", clicks: 1300, conversions: 900, impressions: 7600 },
+    ],
+    "30d": [
+      { name: "Week 1", clicks: 6500, conversions: 4000, impressions: 27000 },
+      { name: "Week 2", clicks: 7200, conversions: 4300, impressions: 28000 },
+      { name: "Week 3", clicks: 8400, conversions: 5000, impressions: 31000 },
+      { name: "Week 4", clicks: 9100, conversions: 5200, impressions: 34000 },
+    ],
+  },
+
+  "Ad Set": {
+    "7d": [
+      { name: "Mon", clicks: 800, conversions: 600, impressions: 4500 },
+      { name: "Tue", clicks: 1000, conversions: 700, impressions: 5000 },
+      { name: "Wed", clicks: 1500, conversions: 900, impressions: 6000 },
+      { name: "Thu", clicks: 2000, conversions: 1200, impressions: 7200 },
+      { name: "Fri", clicks: 2500, conversions: 1300, impressions: 7800 },
+      { name: "Sat", clicks: 2300, conversions: 1100, impressions: 7600 },
+      { name: "Sun", clicks: 1800, conversions: 1000, impressions: 7100 },
+    ],
+    "30d": [
+      { name: "Week 1", clicks: 5500, conversions: 2800, impressions: 20000 },
+      { name: "Week 2", clicks: 6000, conversions: 3500, impressions: 22000 },
+      { name: "Week 3", clicks: 7200, conversions: 4100, impressions: 24000 },
+      { name: "Week 4", clicks: 8000, conversions: 4600, impressions: 26000 },
+    ],
+  },
+
+  Campaign: {
+    "7d": [
+      { name: "Mon", clicks: 400, conversions: 900, impressions: 3500 },
+      { name: "Tue", clicks: 600, conversions: 1000, impressions: 4000 },
+      { name: "Wed", clicks: 800, conversions: 1200, impressions: 4500 },
+      { name: "Thu", clicks: 1000, conversions: 1600, impressions: 5200 },
+      { name: "Fri", clicks: 1300, conversions: 2000, impressions: 6100 },
+      { name: "Sat", clicks: 900, conversions: 1500, impressions: 4800 },
+      { name: "Sun", clicks: 700, conversions: 1300, impressions: 4600 },
+    ],
+    "30d": [
+      { name: "Week 1", clicks: 4000, conversions: 7000, impressions: 15000 },
+      { name: "Week 2", clicks: 5000, conversions: 8500, impressions: 17000 },
+      { name: "Week 3", clicks: 5800, conversions: 9300, impressions: 19000 },
+      { name: "Week 4", clicks: 6400, conversions: 10500, impressions: 21000 },
+    ],
+  },
 };
 
-// --- Data Campaigns ---
+// === Data Campaign (Rupiah) ===
 const campaigns = [
   {
     name: "Summer Sale 2025",
@@ -86,10 +124,10 @@ const campaigns = [
     adsets: 5,
     ads: 12,
     status: "Active",
-    budget: "$500",
-    spend: "$1,234",
+    budget: "Rp7.500.000",
+    spend: "Rp18.200.000",
     conv: 45,
-    date: "Oct 15, 2025",
+    date: "15 Okt 2025",
   },
   {
     name: "Brand Awareness Q4",
@@ -97,10 +135,10 @@ const campaigns = [
     adsets: 3,
     ads: 8,
     status: "Active",
-    budget: "$300",
-    spend: "$892",
+    budget: "Rp4.500.000",
+    spend: "Rp12.400.000",
     conv: 28,
-    date: "Oct 10, 2025",
+    date: "10 Okt 2025",
   },
   {
     name: "Product Launch Campaign",
@@ -108,10 +146,10 @@ const campaigns = [
     adsets: 4,
     ads: 10,
     status: "Paused",
-    budget: "$400",
-    spend: "$567",
+    budget: "Rp6.000.000",
+    spend: "Rp8.200.000",
     conv: 15,
-    date: "Oct 5, 2025",
+    date: "5 Okt 2025",
   },
   {
     name: "Retargeting Campaign",
@@ -119,10 +157,10 @@ const campaigns = [
     adsets: 2,
     ads: 6,
     status: "Active",
-    budget: "$200",
-    spend: "$445",
+    budget: "Rp3.000.000",
+    spend: "Rp6.200.000",
     conv: 32,
-    date: "Oct 1, 2025",
+    date: "1 Okt 2025",
   },
   {
     name: "Holiday Special Promo",
@@ -130,34 +168,38 @@ const campaigns = [
     adsets: 6,
     ads: 15,
     status: "Draft",
-    budget: "$600",
-    spend: "$0",
+    budget: "Rp9.000.000",
+    spend: "Rp0",
     conv: 0,
-    date: "Oct 20, 2025",
+    date: "20 Okt 2025",
   },
 ];
 
 export default function DashboardPage() {
   const [view, setView] = React.useState<"Ad" | "Ad Set" | "Campaign">("Ad Set");
+  const [range, setRange] = React.useState<"7d" | "30d">("7d");
+
+  const chartData = chartDataByViewAndRange[view][range];
 
   return (
     <div className="min-h-screen w-full bg-slate-100 flex flex-col">
       <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Dashboard Overview
+          </h1>
           <p className="text-sm text-gray-500">
-            Monitor your campaign performance and activities
+            Pantau performa campaign dan aktivitas iklanmu
           </p>
         </div>
 
-        {/* --- Stats Cards --- */}
+        {/* === Statistik Kartu === */}
         <div className="flex flex-col md:flex-row gap-4">
           {stats.map((item, i) => {
             const isPositive = item.change >= 0;
             const TrendIcon = isPositive ? TrendingUp : TrendingDown;
             const trendColor = isPositive ? "text-green-500" : "text-red-500";
-
             return (
               <Card
                 key={i}
@@ -191,13 +233,13 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* --- Chart Section --- */}
+        {/* === Chart === */}
         <Card>
           <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
               <CardTitle>Performance Overview</CardTitle>
               <p className="text-sm text-gray-500">
-                Track your campaign metrics over time
+                Lihat performa berdasarkan waktu dan kategori
               </p>
             </div>
 
@@ -213,9 +255,11 @@ export default function DashboardPage() {
                 </Button>
               ))}
 
-              <Select>
+              <Select onValueChange={(val: "7d" | "30d") => setRange(val)}>
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Custom Range" />
+                  <SelectValue placeholder="Pilih Rentang Waktu">
+                    {range === "7d" ? "This Week" : "This Month"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="7d">This Week</SelectItem>
@@ -228,7 +272,7 @@ export default function DashboardPage() {
           <CardContent className="h-80">
             <AnimatePresence mode="wait">
               <motion.div
-                key={view}
+                key={`${view}-${range}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -236,7 +280,7 @@ export default function DashboardPage() {
                 className="h-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartDataByView[view]}>
+                  <LineChart data={chartData}>
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
@@ -251,14 +295,15 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* --- Recent Campaigns --- */}
+        {/* === Campaign Table (Status di kanan) === */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Campaigns</CardTitle>
             <p className="text-sm text-gray-500">
-              Manage and monitor your active campaigns
+              Kelola dan pantau campaign aktif kamu
             </p>
           </CardHeader>
+
           <CardContent>
             <table className="w-full text-sm">
               <thead className="text-gray-500 text-left">
@@ -267,13 +312,14 @@ export default function DashboardPage() {
                   <th>Objective</th>
                   <th>Ad Sets</th>
                   <th>Ads</th>
-                  <th>Status</th>
-                  <th>Daily Budget</th>
+                  <th>Budget</th>
                   <th>Spend</th>
                   <th>Conversions</th>
                   <th>Created Date</th>
+                  <th>Status</th> {/* ✅ Status pindah ke paling kanan */}
                 </tr>
               </thead>
+
               <tbody>
                 {campaigns.map((c, i) => (
                   <tr key={i} className="border-t">
@@ -281,6 +327,10 @@ export default function DashboardPage() {
                     <td>{c.objective}</td>
                     <td>{c.adsets}</td>
                     <td>{c.ads}</td>
+                    <td>{c.budget}</td>
+                    <td>{c.spend}</td>
+                    <td>{c.conv}</td>
+                    <td>{c.date}</td>
                     <td>
                       <Badge
                         variant={
@@ -294,10 +344,6 @@ export default function DashboardPage() {
                         {c.status}
                       </Badge>
                     </td>
-                    <td>{c.budget}</td>
-                    <td>{c.spend}</td>
-                    <td>{c.conv}</td>
-                    <td>{c.date}</td>
                   </tr>
                 ))}
               </tbody>
