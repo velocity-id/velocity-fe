@@ -316,7 +316,7 @@ export default function DashboardPage() {
                   <th>Spend</th>
                   <th>Conversions</th>
                   <th>Created Date</th>
-                  <th>Status</th> {/* ✅ Status pindah ke paling kanan */}
+                  <th>Status</th> 
                 </tr>
               </thead>
 
