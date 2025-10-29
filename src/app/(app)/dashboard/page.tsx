@@ -175,8 +175,10 @@ const campaigns = [
   },
 ];
 
+type ViewType = "Ad" | "Ad Set" | "Campaign";
+
 export default function DashboardPage() {
-  const [view, setView] = React.useState<"Ad" | "Ad Set" | "Campaign">("Ad Set");
+  const [view, setView] = React.useState<ViewType>("Ad Set");
   const [range, setRange] = React.useState<"7d" | "30d">("7d");
 
   const chartData = chartDataByViewAndRange[view][range];
@@ -247,7 +249,7 @@ export default function DashboardPage() {
               {["Ad", "Ad Set", "Campaign"].map((v) => (
                 <Button
                   key={v}
-                  onClick={() => setView(v as any)}
+                  onClick={() => setView(v as ViewType)}
                   variant={view === v ? "default" : "outline"}
                   className="text-sm"
                 >
