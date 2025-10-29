@@ -15,3 +15,10 @@ export type CreateCampaignResponse = {
         fbtrace_id?: string
     }
 }
+
+export type CampaignAdAccount = {
+    id: string
+    name: string
+    account_status: string
+
+}

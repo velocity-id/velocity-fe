@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,11 +9,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Loader2, Plus, Upload } from "lucide-react"
+import { getAdAccounts } from "@/features/campaign/api"
+import { CampaignAdAccount } from "@/features/campaign/type"
 
 export default function CreateCampaign() {
   const [loading, setLoading] = useState(true)
   const [budgetCost, setBudgetCost] = useState("")
   const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"])
+
+  const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([])
 
   const addCampaignPart = (part: string) => {
     if (!campaignParts.includes(part)) {
@@ -22,7 +26,27 @@ export default function CreateCampaign() {
   }
   const clearCampaignParts = () => setCampaignParts([])
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [resAdAccount] = await Promise.all([
+          getAdAccounts(),
+        ]);
+        console.log('resadaccount: ' + JSON.stringify(resAdAccount, null, 2));
+        setAdAccount(resAdAccount);
+      } catch (err) {
+        // setError(err.message || "Failed to fetch ad accounts");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchData();
+  }, []);
+
+  console.log('cek ad account: ', adAccount);
+  console.log('cek ad account ke 1 namanya apa ya: ', adAccount[1]?.id);
   // simulasi loading akun
   setTimeout(() => setLoading(false), 1500)
 
@@ -33,14 +57,16 @@ export default function CreateCampaign() {
           {/* Ad Account */}
           <div>
               <h2 className="font-semibold mb-2">Ad Account</h2>
-              {loading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Loader2 className="animate-spin w-4 h-4" />
-                  Loading Ad Account...
-                </div>
-              ) : (
-                <p>Ad Account Loaded</p>
-              )}
+              <Select>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Ad Account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {adAccount.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
           </div>
 
           <Separator />
