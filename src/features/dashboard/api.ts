@@ -1,137 +1,112 @@
-import axios from "axios";
 import { Campaign } from "./type";
 
-// Meta Ads API setup
 const GRAPH_URL = "https://graph.facebook.com/v23.0";
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_META_ACCESS_TOKEN!;
-const AD_ACCOUNT_ID = process.env.NEXT_PUBLIC_META_AD_ACCOUNT_ID!;
+const ACCESS_TOKEN = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN!;
+const AD_ACCOUNT_ID = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID!;
 
-// GET CAMPAIGNS
+// ✅ 1. Tetap: Mengambil list campaign + insight summary
 export async function fetchCampaigns(): Promise<Campaign[]> {
   if (!ACCESS_TOKEN || !AD_ACCOUNT_ID) {
-    console.warn("⚠️ Missing Meta Ads token or account ID. Returning mock data.");
-    return [
-      {
-        id: "1",
-        name: "Mock Campaign",
-        objective: "SALES",
-        adsets: 3,
-        ads: 7,
-        budget: "Rp100.000",
-        spend: "Rp80.000",
-        conv: 5,
-        date: "06 Nov 2025",
-        status: "ACTIVE",
-      },
-    ];
+    throw new Error(
+      "Missing environment variables: NEXT_PUBLIC_FB_ACCESS_TOKEN or NEXT_PUBLIC_AD_ACCOUNT_ID"
+    );
   }
 
-  try {
-    const res = await axios.get<{ data: any[] }>(
-      `${GRAPH_URL}/act_${AD_ACCOUNT_ID}/campaigns`,
-      {
-        params: {
-          fields: "id,name,objective,status,daily_budget,created_time",
-          access_token: ACCESS_TOKEN,
-        },
-      }
-    );
+  // --- Campaign list ---
+  const campaignUrl = new URL(`${GRAPH_URL}/act_${AD_ACCOUNT_ID}/campaigns`);
+  campaignUrl.search = new URLSearchParams({
+    fields: "id,name,objective,status,daily_budget,created_time",
+    access_token: ACCESS_TOKEN,
+    limit: "100",
+  }).toString();
 
-    return res.data.data.map((c) => ({
-      id: c.id,
-      name: c.name,
-      objective: c.objective || "Unknown",
-      adsets: 0,
-      ads: 0,
-      budget: c.daily_budget
-        ? `Rp${(Number(c.daily_budget) / 100).toLocaleString("id-ID")}`
-        : "-",
-      spend: "-",
-      conv: 0,
-      date: new Date(c.created_time).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      status: c.status || "INACTIVE",
-    }));
-  } catch (err: any) {
-    console.error("❌ Gagal memuat data Meta Ads:", err.response?.data || err);
-    return [];
+  const campaignRes = await fetch(campaignUrl.toString());
+  const campaignJson = await campaignRes.json();
+
+  if (!campaignRes.ok) {
+    throw new Error(campaignJson.error?.message || "Gagal memuat campaign");
   }
-}
 
-// GET INSIGHTS (chart data)
-export async function fetchInsights(range: "7d" | "30d") {
-  if (!ACCESS_TOKEN || !AD_ACCOUNT_ID) return [];
+  const campaigns = campaignJson.data ?? [];
 
-  try {
-    const since =
-      range === "7d"
-        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const until = new Date();
+  // --- Insights summary (per campaign, total 30 hari) ---
+  const insightsUrl = new URL(`${GRAPH_URL}/act_${AD_ACCOUNT_ID}/insights`);
+  insightsUrl.search = new URLSearchParams({
+    fields: "campaign_id,spend,clicks,impressions,actions",
+    date_preset: "last_30d",
+    level: "campaign",
+    access_token: ACCESS_TOKEN,
+    limit: "500",
+  }).toString();
 
-    const res = await axios.get<{ data: any[] }>(
-      `${GRAPH_URL}/act_${AD_ACCOUNT_ID}/insights`,
-      {
-        params: {
-          fields: "date_start,clicks,impressions,spend,actions",
-          time_range: JSON.stringify({
-            since: since.toISOString().split("T")[0],
-            until: until.toISOString().split("T")[0],
-          }),
-          access_token: ACCESS_TOKEN,
-        },
-      }
-    );
+  const insightsRes = await fetch(insightsUrl.toString());
+  const insightsJson = await insightsRes.json();
 
-    return res.data.data.map((item) => ({
-      name: item.date_start,
-      clicks: Number(item.clicks) || 0,
-      impressions: Number(item.impressions) || 0,
-      conversions:
-        item.actions?.find(
-          (a: any) => a.action_type === "offsite_conversion.fb_pixel_purchase"
-        )?.value || 0,
-      spend: Number(item.spend) || 0,
-    }));
-  } catch (err: any) {
-    console.error("❌ Gagal memuat insights Meta Ads:", err.response?.data || err);
-    return [];
+  if (!insightsRes.ok) {
+    throw new Error(insightsJson.error?.message || "Gagal memuat insights");
   }
-}
 
-// CREATE CAMPAIGN
-export async function createCampaign(payload: {
-  name: string;
-  objective: string;
-}) {
-  if (!ACCESS_TOKEN || !AD_ACCOUNT_ID)
-    return { success: false, message: "Token Meta Ads belum dikonfigurasi." };
+  const insights = insightsJson.data ?? [];
 
-  try {
-    const res = await axios.post<{ id: string }>(
-      `${GRAPH_URL}/act_${AD_ACCOUNT_ID}/campaigns`,
-      {
-        name: payload.name,
-        objective: payload.objective,
-        status: "PAUSED",
-        access_token: ACCESS_TOKEN,
-      }
-    );
+  // --- Merge campaign + insights ---
+  return campaigns.map((c: any) => {
+    const found = insights.find((i: any) => i.campaign_id === c.id);
+
+    const spend = found ? Number(found.spend || 0) : 0;
+    const clicks = found ? Number(found.clicks || 0) : 0;
+    const impressions = found ? Number(found.impressions || 0) : 0;
+    const conversions =
+      found?.actions?.find(
+        (a: any) =>
+          a.action_type === "offsite_conversion.fb_pixel_purchase"
+      )?.value || 0;
 
     return {
-      success: true,
-      data: {
-        id: res.data.id,
-        name: payload.name,
-        objective: payload.objective,
-        status: "PAUSED",
-      },
+      id: c.id,
+      name: c.name,
+      objective: c.objective ?? "Unknown",
+      budget: c.daily_budget
+        ? Number(c.daily_budget) / 100
+        : 0,
+      spend, // ✅ PERBAIKAN: angka, bukan string
+      clicks,
+      impressions,
+      conversions,
+      date: c.created_time,
+      status: c.status ?? "INACTIVE",
     };
-  } catch (err: any) {
-    console.error("❌ Gagal membuat campaign:", err.response?.data || err);
-    return { success: false };
+  });
+}
+
+// ✅ 2. Tambahan baru: fetchInsights (untuk chart + total spend)
+export async function fetchInsights(range: "7d" | "30d") {
+  const preset = range === "7d" ? "last_7d" : "last_30d";
+
+  const url = new URL(`${GRAPH_URL}/act_${AD_ACCOUNT_ID}/insights`);
+  url.search = new URLSearchParams({
+    fields: "date_start,spend,clicks,impressions,actions",
+    level: "account",
+    time_increment: "1", // ✅ daily breakdown untuk chart
+    date_preset: preset,
+    access_token: ACCESS_TOKEN,
+  }).toString();
+
+  const res = await fetch(url.toString());
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json.error?.message || "Gagal memuat insights harian");
   }
+
+  return json.data.map((d: any) => ({
+    date: d.date_start,
+    spend: Number(d.spend || 0),
+    clicks: Number(d.clicks || 0),
+    impressions: Number(d.impressions || 0),
+    conversions:
+      d.actions?.find(
+        (a: any) =>
+          a.action_type === "offsite_conversion.fb_pixel_purchase"
+      )?.value || 0,
+  }));
 }

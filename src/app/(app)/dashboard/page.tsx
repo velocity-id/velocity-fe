@@ -44,55 +44,78 @@ export default function DashboardPage() {
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
   const [chartData, setChartData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [totalSpend, setTotalSpend] = React.useState(0);
 
-  // Fetch Meta Ads
   React.useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       setLoading(true);
-      const campaignData = await fetchCampaigns();
-      const insightData = await fetchInsights(range);
-      setCampaigns(campaignData);
-      setChartData(insightData);
+
+      const [campaignRes, insightsRes] = await Promise.all([
+        fetchCampaigns(),
+        fetchInsights(range),
+      ]);
+
+      setCampaigns(campaignRes);
+      setChartData(insightsRes);
+
+      const total = insightsRes.reduce((sum: number, item: any) => {
+        return sum + Number(item.spend || 0);
+      }, 0);
+
+      setTotalSpend(total);
       setLoading(false);
     };
-    fetchData();
+
+    load();
   }, [range]);
 
-  // Statistik
+  // === Statistik ===
   const totalCampaigns = campaigns.length;
-  const totalSpend = chartData.reduce((sum, d) => sum + (d.spend || 0), 0);
   const totalClicks = chartData.reduce((sum, d) => sum + (d.clicks || 0), 0);
   const totalImpressions = chartData.reduce(
     (sum, d) => sum + (d.impressions || 0),
     0
   );
 
+  // === Hitung perubahan persentase ===
+  const prevSpend = chartData[chartData.length - 2]?.spend || 0;
+  const spendChange = prevSpend > 0 ? ((totalSpend - prevSpend) / prevSpend) * 100 : 0;
+
+  const prevClicks = chartData[chartData.length - 2]?.clicks || 0;
+  const clicksChange = prevClicks > 0 ? ((totalClicks - prevClicks) / prevClicks) * 100 : 0;
+
+  const prevImpressions = chartData[chartData.length - 2]?.impressions || 0;
+  const impressionsChange = prevImpressions > 0 ? ((totalImpressions - prevImpressions) / prevImpressions) * 100 : 0;
+
+  const prevCampaigns = totalCampaigns - 1;
+  const campaignChange = prevCampaigns > 0 ? ((totalCampaigns - prevCampaigns) / prevCampaigns) * 100 : 0;
+
   const stats = [
     {
-      title: "Total Campaigns",
-      value: loading ? "-" : totalCampaigns,
-      change: 0,
+      title: "Total Campaign",
+      value: totalCampaigns,
+      change: campaignChange.toFixed(1),
       icon: <Target className="w-6 h-6 text-blue-500" />,
       bg: "bg-blue-100",
     },
     {
       title: "Total Spend (Rp)",
-      value: loading ? "-" : `Rp${(totalSpend * 100).toLocaleString("id-ID")}`,
-      change: 0,
+      value: loading ? "-" : `Rp${totalSpend.toLocaleString("id-ID")}`,
+      change: spendChange.toFixed(1),
       icon: <CreditCard className="w-6 h-6 text-green-500" />,
       bg: "bg-green-100",
     },
     {
       title: "Total Clicks",
       value: loading ? "-" : totalClicks,
-      change: 0,
+      change: clicksChange.toFixed(1),
       icon: <Megaphone className="w-6 h-6 text-purple-500" />,
       bg: "bg-purple-100",
     },
     {
       title: "Total Impressions",
       value: loading ? "-" : totalImpressions,
-      change: 0,
+      change: impressionsChange.toFixed(1),
       icon: <Layers className="w-6 h-6 text-orange-500" />,
       bg: "bg-orange-100",
     },
@@ -103,55 +126,61 @@ export default function DashboardPage() {
       <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Dashboard Overview
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
           <p className="text-sm text-gray-500">
             Pantau performa campaign dan aktivitas iklanmu dari Meta Ads
           </p>
         </div>
 
-        {/* Statistik (2 atas, 2 bawah) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* === Statistik Cards (2 jajar) === */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {stats.map((item, i) => {
-            const isPositive = item.change >= 0;
+            const isPositive = parseFloat(item.change) >= 0;
             const TrendIcon = isPositive ? TrendingUp : TrendingDown;
-            const trendColor = isPositive ? "text-green-500" : "text-red-500";
-            return (
-              <Card
-                key={i}
-                className="flex flex-row items-center justify-between p-5 w-full bg-white shadow-sm rounded-2xl"
-              >
-                <div>
-                  <CardTitle className="text-lg text-slate-700">
-                    {item.title}
-                  </CardTitle>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1">
-                    {item.value}
-                  </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <TrendIcon className={`w-4 h-4 ${trendColor}`} />
-                    <p
-                      className={`text-sm font-medium ${
-                        isPositive ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {isPositive ? `+${item.change}%` : `${item.change}%`}
-                    </p>
-                  </div>
-                </div>
+            const trendColor = isPositive ? "text-green-600" : "text-red-600";
 
-                <div
-                  className={`rounded-xl p-3 ${item.bg} flex items-center justify-center`}
-                >
-                  {item.icon}
-                </div>
-              </Card>
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                whileHover={{
+                  y: -4,
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 300 },
+                }}
+              >
+                <Card className="flex flex-row items-center justify-between p-5 w-full bg-white shadow-md hover:shadow-lg rounded-2xl transition-all duration-300 ease-in-out">
+                  <div>
+                    <CardTitle className="text-lg text-slate-700">
+                      {item.title}
+                    </CardTitle>
+
+                    <p className="text-2xl font-semibold text-slate-900 mt-1">
+                      {item.value}
+                    </p>
+
+                    {/* Trend indicator */}
+                    <div className="flex items-center gap-1 mt-2">
+                      <TrendIcon className={`w-4 h-4 ${trendColor}`} />
+                      <span className={`text-sm font-medium ${trendColor}`}>
+                        {isPositive ? "+" : ""}
+                        {item.change}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl p-3 ${item.bg}`}>
+                    {item.icon}
+                  </div>
+                </Card>
+              </motion.div>
             );
           })}
         </div>
 
-        {/* Chart */}
+        {/* === Chart Performance Overview === */}
         <Card>
           <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
@@ -188,23 +217,14 @@ export default function DashboardPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
-                    <XAxis dataKey="name" />
+                    <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="clicks" stroke="#16a34a" dot />
-                    <Line
-                      type="monotone"
-                      dataKey="conversions"
-                      stroke="#ef4444"
-                      dot
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="impressions"
-                      stroke="#a855f7"
-                      dot
-                    />
+                    <Line type="monotone" dataKey="spend" stroke="#16a34a" dot />
+                    <Line type="monotone" dataKey="clicks" stroke="#0ea5e9" dot />
+                    <Line type="monotone" dataKey="impressions" stroke="#a855f7" dot />
+                    <Line type="monotone" dataKey="conversions" stroke="#ef4444" dot />
                   </LineChart>
                 </ResponsiveContainer>
               </motion.div>
@@ -212,7 +232,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Campaign Table */}
+        {/* === Recent Campaigns === */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Campaigns</CardTitle>
