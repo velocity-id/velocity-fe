@@ -10,6 +10,9 @@ import { Switch } from "@/components/ui/switch"
 import { CommonHeader } from "@/components/common/common-header"
 import { Formik, Form, FieldArray, ErrorMessage } from "formik"
 import * as Yup from "yup"
+import { useEffect, useState } from "react" 
+import { getCustomAudiences } from "@/features/ad-set/api"
+import { CustomAudience } from "@/features/ad-set/type"
 
 const AdSetSchema = Yup.object().shape({
   adsets: Yup.array()
@@ -44,7 +47,24 @@ const initialValues = {
 }
 
 
+
 export default function CreateAdSet() {
+  const [audiences, setAudiences] = useState<CustomAudience[]>([]);
+  const adAccountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID!;
+
+  useEffect(() => {
+  async function fetchAudiences() {
+    try {
+      const data = await getCustomAudiences(adAccountId);
+      console.log("Audiences loaded:", data);
+      setAudiences(data);
+    } catch (err) {
+      console.error("Error loading audiences:", err);
+    }
+  }
+  fetchAudiences();
+}, [adAccountId]);
+
   return (
     <Formik
       initialValues={initialValues}
@@ -100,19 +120,34 @@ export default function CreateAdSet() {
                           {/* CUSTOM AUDIENCE */}
                           <div className="space-y-2">
                             <Label>Custom Audience</Label>
-                            <Input
-                              name={`adsets.${idx}.customAudience`}
-                              placeholder="e.g. Lookalike Audience ID"
+                            <Select
                               value={adset.customAudience}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                            />
+                              onValueChange={(val) =>
+                                setFieldValue(`adsets.${idx}.customAudience`, val)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select saved audience" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {audiences.length > 0 ? (
+                                  audiences.map((aud) => (
+                                    <SelectItem key={aud.id} value={aud.id}>
+                                      {aud.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem disabled value="no-audience">No saved audience found</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
                             <ErrorMessage
                               name={`adsets.${idx}.customAudience`}
                               component="p"
                               className="text-red-500 text-sm"
                             />
                           </div>
+
 
                           {/* AGE RANGE */}
                           <div className="flex gap-4">
@@ -262,7 +297,7 @@ export default function CreateAdSet() {
            
             {/* KOLOM KANAN — SPLIT SUMMARY */}
             <div className="lg:col-span-1">
-              <Card className="sticky top-4 shadow-md">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>Ad Set Split Summary</CardTitle>
                   <p className="text-sm text-muted-foreground">
