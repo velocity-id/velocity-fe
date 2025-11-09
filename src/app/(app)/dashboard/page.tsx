@@ -33,6 +33,8 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
+
 
 // === Statistik Kartu ===
 const stats = [
@@ -178,6 +180,8 @@ const campaigns = [
 type ViewType = "Ad" | "Ad Set" | "Campaign";
 
 export default function DashboardPage() {
+  const {data: session} = useSession();
+  console.log("User session:", session);
   const [view, setView] = React.useState<ViewType>("Ad Set");
   const [range, setRange] = React.useState<"7d" | "30d">("7d");
 
