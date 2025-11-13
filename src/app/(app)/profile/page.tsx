@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { fetchProfileData } from "@/features/profile/api";
 import { ProfileData } from "@/features/profile/type";
@@ -30,7 +30,19 @@ import {
   DollarSign,
   Clock,
   Cloud,
+  Bell,
+  Lock,
 } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 
 
@@ -40,9 +52,49 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
+async function getFacebookProfile(token: string) {
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`
+    );
+    const data = await res.json();
+    if (data.error) {
+      console.error("❌ Facebook API Error:", data.error);
+      return null;
+    }
+    return data; // { id, name }
+  } catch (err) {
+    console.error("❌ Fetch failed:", err);
+    return null;
+  }
+}
+
+
 export default function Page() {
   const [connected, setConnected] = useState(true);
+  const [campaignNotifications, setCampaignNotifications] = useState(true);
   const { theme, setTheme } = useTheme();
+  const [fbName, setFbName] = useState<string>("Loading...");
+
+
+  useEffect(() => {
+    const token = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN;
+
+    if (!token) {
+      console.warn("⚠️ Missing NEXT_PUBLIC_FB_ACCESS_TOKEN");
+      setFbName("Token Not Found");
+      return;
+    }
+
+    // panggil fungsi
+    getFacebookProfile(token).then((profile) => {
+      if (profile?.name) {
+        setFbName(profile.name);
+      } else {
+        setFbName("Unknown User");
+      }
+    });
+  }, []);
 
   // Dummy dynamic data (bisa nanti diganti API)
   const data = {
@@ -51,7 +103,7 @@ export default function Page() {
       location: "Jakarta, Indonesia",
       website: "www.velocity.co.id",
       phone: "+62 21 1234 5678",
-      email: "info@velocity.co.id",
+      email: "velocity.rplupi@gmail.com",
       since: "15 Jan 2020",
       verified: true,
     },
@@ -95,8 +147,9 @@ export default function Page() {
       </Avatar>
 
       <div>
-        <h1 className="text-2xl font-semibold">PT Velocity Indonesia</h1>
-        <p className="text-gray-600 dark:text-gray-400">Velocity Official Ads</p>
+        <h1 className="text-2xl font-semibold">{fbName}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ad Account ID: {process.env.NEXT_PUBLIC_AD_ACCOUNT_ID}</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Velocity Official Ads</p>
 
         <div className="flex items-center gap-2 mt-2">
           <span className="flex items-center gap-1 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">
@@ -112,41 +165,86 @@ export default function Page() {
     {/* Tombol-tombol aksi */}
     <div className="flex flex-wrap gap-3">
       {/* ✅ Edit Profile */}
-      <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-        <Edit3 size={16} />
-        Edit Profile
-      </Button>
+     <Dialog>
+  <DialogTrigger asChild>
+    <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 cursor-pointer">
+      <Edit3 size={16} />
+      Edit Profile
+    </Button>
+  </DialogTrigger>
 
-      {/* 🔁 Sync */}
-      <Button
-        variant="outline"
-        className="border-blue-600 text-blue-600 hover:bg-blue-50 gap-2"
-        onClick={() => setConnected(!connected)}
-      >
-        <RefreshCw size={16} />
-        {connected ? "Sync Meta Ads" : "Reconnect"}
+  <DialogContent className="max-w-md">
+    <DialogHeader>
+      <DialogTitle>Edit Business Profile</DialogTitle>
+    </DialogHeader>
+
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        alert("✅ Profile updated (simulasi frontend)");
+      }}
+      className="space-y-5"    >
+      
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Business Name</Label>
+        <Input defaultValue={data.business.name} placeholder="Enter business name" className="py-2.5" />
+      </div>
+      
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Email</Label>
+        <Input defaultValue={data.business.email} placeholder="Enter email address" type="email" className="py-2.5" />
+      </div>
+      
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Phone Number</Label>
+        <Input defaultValue={data.business.phone} placeholder="Enter phone number" className="py-2.5" />
+      </div>
+      
+      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 mt-6">
+        Save Changes
       </Button>
+    </form>
+  </DialogContent>
+</Dialog>
+
+      <Button
+  variant="outline"
+  className={`gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer ${
+    connected ? "" : "animate-pulse"
+  }`}
+  onClick={() => {
+    setConnected(false);
+    setTimeout(() => {
+      setConnected(true);
+      alert("✅ Meta Ads data synced successfully!");
+    }, 1500);
+  }}
+>
+  <RefreshCw size={16} className={connected ? "" : "animate-spin"} />
+  {connected ? "Sync Meta Ads" : "Reconnecting..."}
+</Button>
 
       {/* 🔗 Open Meta */}
-      <Button variant="outline" className="gap-2">
+      <Button variant="outline" className="gap-2 cursor-pointer">
         <LinkIcon size={16} />
         Open in Meta
       </Button>
 
       {/* 🚪 Logout */}
-      <Button variant="ghost" className="text-gray-600 hover:text-gray-900 gap-2">
+      <Button variant="ghost" className="text-gray-600 hover:text-gray-900 gap-2 cursor-pointer">
         <LogOut size={16} />
         Logout
       </Button>
 
-      {/* ☀️/🌙 Theme toggle */}
       <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      >
-        {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-      </Button>
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+
+
     </div>
   </div>
 </Card>
@@ -220,23 +318,77 @@ export default function Page() {
 
       {/* ================= SETTINGS ================= */}
       <CardWithHeader title="Settings & Integration" icon={<Settings size={18} />}>
-        <div className="space-y-4">
-          <Info label="Meta Ads Access Token" value={`Valid until ${data.manager.tokenExpiry}`} />
-          <Info label="Notification Preferences" value="Receive updates about campaigns" />
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Dark Mode</p>
-            <Switch
-              checked={theme === "dark"}
-              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-            />
+        <div className="space-y-6">
+          {/* Access & Security Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Access & Security</h3>
+            <Info label="Meta Ads Access Token" value={`Valid until ${data.manager.tokenExpiry}`} />
+            <Info label="Account Status" value="Active" highlight={true} />
+            <Info label="Last Sync" value="2 minutes ago" />
           </div>
 
-          <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+          {/* Meta Integration Features Section */}
+          <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Meta Integration</h3>
+            
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition">
+              <div className="flex items-center gap-2">
+                <Facebook size={16} className="text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Facebook Page Insights</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">View analytics and performance</p>
+                </div>
+              </div>
+              <CheckCircle size={16} className="text-green-500" />
+            </div>
+
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition">
+              <div className="flex items-center gap-2">
+                <Instagram size={16} className="text-pink-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Instagram Insights</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Monitor account activity</p>
+                </div>
+              </div>
+              <CheckCircle size={16} className="text-green-500" />
+            </div>
+
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition" onClick={() => setCampaignNotifications(!campaignNotifications)}>
+              <div className="flex items-center gap-2">
+                <Bell size={16} className="text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Campaign Notifications</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Get alerts for important events</p>
+                </div>
+              </div>
+              <Switch 
+                checked={campaignNotifications}
+                onCheckedChange={setCampaignNotifications}
+                className="cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition">
+              <div className="flex items-center gap-2">
+                <Lock size={16} className="text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">API Permissions</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Manage access rights</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="text-xs cursor-pointer">
+                Manage
+              </Button>
+            </div>
+          </div>
+
+          {/* Actions Section */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button className="flex-1 bg-blue-600 hover:bg-blue-700 cursor-pointer">
               <RefreshCw className="w-4 h-4 mr-2" />
               Reconnect Meta Ads
             </Button>
-            <Button variant="destructive">
+            <Button variant="destructive" className="flex-1 cursor-pointer">
               Delete Account
             </Button>
           </div>
