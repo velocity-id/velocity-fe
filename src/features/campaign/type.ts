@@ -22,3 +22,18 @@ export type CampaignAdAccount = {
     account_status: string
 
 }
+
+export type CampaignBudget ={
+  id: string;
+  name: string;
+  status: string;
+  daily_budget: number;
+  lifetime_budget: number;
+  budget_remaining: number;
+}
+
+export type CampaignBidStrategy = {
+  id: string;
+  name: string;
+  bid_strategy: string;
+};
