@@ -37,3 +37,10 @@ export type CampaignBidStrategy = {
   name: string;
   bid_strategy: string;
 };
+export interface Campaign {
+  id: string;
+  name: string;
+  status: string;
+  objective: string;
+  effective_status: string;
+}

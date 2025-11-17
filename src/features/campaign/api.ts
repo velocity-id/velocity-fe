@@ -1,76 +1,82 @@
 import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignBudget, CampaignBidStrategy } from "./type"
 
 
-export async function createCampaign(form: CampaignForm): Promise<CreateCampaignResponse> {
-  const accessToken = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN
-  const accountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID
 
-  if (!accessToken || !accountId) {
-    throw new Error("Missing environment variables: NEXT_PUBLIC_FB_ACCESS_TOKEN or NEXT_PUBLIC_AD_ACCOUNT_ID")
+/* ============================================================
+    CREATE CAMPAIGN
+   ============================================================ */
+export async function createCampaign(
+  form: CampaignForm,
+): Promise<CreateCampaignResponse> {
+  const session = await getSession();
+
+  if (!session?.accessToken) {
+    throw new Error("No Facebook access token in session");
   }
 
-  const res = await fetch(`https://graph.facebook.com/v23.0/act_${accountId}/campaigns`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      access_token: accessToken,
-      name: form.name,
-      objective: form.objective,
-      status: form.status,
-      special_ad_categories: form.specialAdCategories,
-    }),
-  })
+  const accessToken = session.accessToken;
+  const accountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID;
 
-  const data = await res.json()
+  if (!accountId) {
+    throw new Error("Missing env: NEXT_PUBLIC_AD_ACCOUNT_ID");
+  }
+
+  const res = await fetch(
+    `https://graph.facebook.com/v23.0/act_${accountId}/campaigns`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        access_token: accessToken,
+        name: form.name,
+        objective: form.objective,
+        status: form.status,
+        special_ad_categories: form.specialAdCategories,
+      }),
+    },
+  );
+
+  const data = await res.json();
 
   if (!res.ok) {
-    const error = data.error ?? {
-      message: "Unknown error from Facebook API",
-      type: "InternalError",
-      code: res.status,
-      error_subcode: 0,
-    }
-
-    return {
-      error: {
-        message: error.message,
-        type: error.type,
-        code: error.code,
-        error_subcode: error.error_subcode,
-        fbtrace_id: error.fbtrace_id,
-      },
-    }
+    return { error: data.error };
   }
 
-  return { id: data.id }
+  return { id: data.id };
 }
 
-export async function getAdAccounts(): Promise<CampaignAdAccount[]> {
-  const accessToken = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN;
-   if (!accessToken) {
-    throw new Error("Missing environment variables: NEXT_PUBLIC_FB_ACCESS_TOKEN or NEXT_PUBLIC_AD_ACCOUNT_ID")
-  }
 
+
+/* ============================================================
+    GET AD ACCOUNTS
+   ============================================================ */
+export async function getAdAccounts(): Promise<CampaignAdAccount[]> {
   try {
+    const session = await getSession();
+    console.log("Session in getAdAccounts:", session);
+
+    if (!session?.accessToken) {
+      throw new Error("No Facebook access token in session");
+    }
+
+    const accessToken = session.accessToken;
+
     const res = await fetch(
       `https://graph.facebook.com/v23.0/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { method: "GET" }
     );
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch ad accounts: ${res.statusText}`);
+      const errorText = await res.text();
+      throw new Error(`Failed to fetch ad accounts: ${res.status} - ${errorText}`);
     }
 
     const data = await res.json();
     return data.data || [];
-  } catch (error) {
-    console.error("Error fetching ad accounts:", error);
-    throw error;
+
+  } catch (err) {
+    console.error("Error in getAdAccounts():", err);
+    throw err; // lempar lagi biar bisa ditangkap di UI
   }
 }
 
