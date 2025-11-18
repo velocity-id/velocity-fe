@@ -5,24 +5,24 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Plus } from "lucide-react";
 import { getAdAccounts } from "@/features/campaign/api";
 import { CampaignAdAccount } from "@/features/campaign/type";
-import { getCampaignObjectives } from "@/features/campaign/api";
-import { getCampaignBudgets} from "@/features/campaign/api";
-import { CampaignBudget} from "@/features/campaign/type";
-import { getCampaignBidStrategies} from "@/features/campaign/api";
-import { CampaignBidStrategy } from "@/features/campaign/type";
+import { CampaignObjectiveItem } from "@/features/campaign/type";
+import { CampaignBudgetItem } from "@/features/campaign/type";
+import { BidStrategyItem } from "@/features/campaign/type";
+import { ScheduleIncreaseItem } from "@/features/campaign/type";
+
+
+
 
 // Skema Validasi Yup
 const campaignSchema = Yup.object({
-  // campaignType: Yup.string().required("Campaign type is required"),
+  adAccount: Yup.string().required("Ad Account is required"),
   objective: Yup.string().required("Objective is required"),
   budgetType: Yup.string().required("Budget type is required"),
   budgetCost: Yup.number()
@@ -34,24 +34,43 @@ const campaignSchema = Yup.object({
   campaignName: Yup.string().required("campaign Name is required"),
 });
 
+
+
 export default function CreateCampaign() {
   const [loading, setLoading] = useState(true);
   const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"]);
   const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([]);
-  const [objectives, setObjectives] = useState<string[]>([]);
-  const [budgets, setBudgets] = useState<CampaignBudget[]>([]);
-  const [bidStrategies, setBidStrategies] = useState<CampaignBidStrategy[]>([]);
-
-  //static options for budget type
-  const budgetTypeOptions = [
-    { value: "daily", label: "Daily Budget" },
-    { value: "lifetime", label: "Lifetime Budget" },
+  const [objectives, setObjectives] = useState<CampaignObjectiveItem[]>([]);
+  
+  // //constant untuk objective
+  const CampaignObjective: CampaignObjectiveItem[] = [
+    { value: "OUTCOME_AWARENESS", label: "Awareness" },
+    { value: "OUTCOME_TRAFFIC", label: "Traffic" },
+    { value: "OUTCOME_ENGAGEMENT", label: "Engagement" },
+    { value: "OUTCOME_LEADS", label: "Leads" },
+    { value: "OUTCOME_APP_PROMOTION", label: "App Promotion" },
+    { value: "OUTCOME_SALES", label: "Sales" },
   ];
 
-  // Unique bid strategy list (karena bisa duplikat antar campaign)
-  const uniqueBidStrategies = Array.from(
-    new Set(bidStrategies.map((b) => b.bid_strategy))
-  ).filter(Boolean);
+  //constant untuk budget
+  const CampaignBudget : CampaignBudgetItem[] =  [
+    { value: "daily_budget", label: "Daily Budget" },
+    { value: "lifetime_budget", label: "Lifetime Budget" },
+  ];
+
+  //constant untuk budget
+  const BidStrategy : BidStrategyItem[] =  [
+    { value: "LOWEST_COST_WITHOUT_CAP", label: "Highest Volume" },
+    { value: "COST_CAP", label: "Cost per result goal" },
+    { value: "LOWEST_COST_WITH_BID_CAP", label: "Bid cap" },
+  ];
+
+  //constant schedule increase
+  const ScheduleIncreaseType: ScheduleIncreaseItem[] = [
+  { value: "value", label: "Increase daily budget by value amount (Rp)" },
+  { value: "percentage", label: "Increase daily budget by percentage (%)" }
+  ];
+
 
   //Fetch Ad Accounts
   useEffect(() => {
@@ -71,45 +90,9 @@ export default function CreateCampaign() {
 
   //Fetch Objective
   useEffect(() => {
-    const fetchObjectives = async () => {
-      try {
-        const res = await getCampaignObjectives();
-        console.log("Hasil dari getCampaignObjectives:", res);
-        setObjectives(res);
-      } catch (err) {
-        console.error("Gagal mengambil data objective:", err);
-      }
-    };
-    fetchObjectives();
+    setObjectives(CampaignObjective);
   }, []);
 
-  //fetch budget
-  useEffect(() => {
-  const fetchBudgets = async () => {
-    try {
-      const res = await getCampaignBudgets();
-      console.log("Hasil budget dari API:", res);
-      setBudgets(res);
-    } catch (err) {
-      console.error("Gagal ambil budget:", err);
-    }
-  };
-  fetchBudgets();
-  }, []);
-
-  //fetch bid strategy
-  useEffect(() => {
-    const fetchBidStrategies = async () => {
-      try {
-        const res = await getCampaignBidStrategies(); 
-        console.log("Hasil Bid Strategy dari API:", res);
-        setBidStrategies(res);
-      } catch (err) {
-        console.error("Gagal ambil bid strategy:", err);
-      }
-    };
-    fetchBidStrategies();
-  }, []);
 
   // Inisialisasi Formik
   const formik = useFormik({
@@ -120,6 +103,14 @@ export default function CreateCampaign() {
       budgetCost: "",
       bidStrategy: "",
       schedule: "",
+      schedulePeriods: [
+      {
+        startDate: "",
+        endDate: "",
+        increaseType: "value",
+        increaseAmount: ""
+      }
+      ],
       adAccount: "",
       campaignName: "",
     },
@@ -145,6 +136,7 @@ export default function CreateCampaign() {
       <form onSubmit={formik.handleSubmit}>
         <Card className="shadow-lg border w-full">
           <CardContent className="space-y-6 p-6">
+
             {/* Ad Account */}
             <div>
               <h2 className="font-semibold mb-2">Ad Account</h2>
@@ -177,29 +169,6 @@ export default function CreateCampaign() {
 
             <Separator />
 
-            {/* Campaign Type */}
-            {/*<div>
-              <h2 className="font-semibold mb-2">Campaign Type</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Campaign Type</p>
-              <Select
-                value={formik.values.campaignType}
-                onValueChange={(val) => formik.setFieldValue("campaignType", val)}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Campaign Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NONE">NONE</SelectItem>
-                  <SelectItem value="ICO_ONLY">ICO_ONLY</SelectItem>
-                </SelectContent>
-              </Select>
-              {formik.touched.campaignType && formik.errors.campaignType && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.campaignType}</p>
-              )}
-            </div>
-
-            <Separator /> */}
-
             {/* Objective */}
             <div>
               <h2 className="font-semibold mb-2">Objective</h2>
@@ -212,11 +181,11 @@ export default function CreateCampaign() {
                   <SelectValue placeholder="Select Objective" />
                 </SelectTrigger>
                 <SelectContent>
-                    {objectives.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {item.replace("OUTCOME_", "").replace("_", " ")}
-                      </SelectItem>
-                    ))}
+                  {objectives.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {formik.touched.objective && formik.errors.objective && (
@@ -239,7 +208,7 @@ export default function CreateCampaign() {
                     <SelectValue placeholder="Select Budget Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {budgetTypeOptions.map((item) => (
+                    {CampaignBudget.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
                     </SelectItem>
@@ -274,15 +243,22 @@ export default function CreateCampaign() {
             <div>
               <h2 className="font-semibold mb-2">Bid Strategy</h2>
               <p className="text-sm text-gray-500 mb-2">Choose Bid Strategy</p>
-              <RadioGroup
+              <Select
                 value={formik.values.bidStrategy}
                 onValueChange={(val) => formik.setFieldValue("bidStrategy", val)}
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="lowest" id="lowest" />
-                  <label htmlFor="lowest" className="text-sm">Lowest Cost</label>
-                </div>
-              </RadioGroup>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select bid strategy" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {BidStrategy.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {formik.touched.bidStrategy && formik.errors.bidStrategy && (
                 <p className="text-xs text-red-500 mt-1">{formik.errors.bidStrategy}</p>
               )}
@@ -291,28 +267,112 @@ export default function CreateCampaign() {
             <Separator />
 
             {/* Campaign Schedule */}
-            <div>
-              <h2 className="font-semibold mb-2">Campaign Schedule</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Campaign Schedule</p>
-              <RadioGroup
-                value={formik.values.schedule}
-                onValueChange={(val) => formik.setFieldValue("schedule", val)}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="always" id="always" />
-                  <label htmlFor="always" className="text-sm">Run ads all the time</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="schedule" id="schedule" />
-                  <label htmlFor="schedule" className="text-sm">Run ads on a schedule</label>
-                </div>
-              </RadioGroup>
-              {formik.touched.schedule && formik.errors.schedule && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.schedule}</p>
-              )}
-            </div>
+              <div>
+                <h2 className="font-semibold mb-2">Campaign Schedule</h2>
+                <p className="text-sm text-gray-500 mb-2">Choose Campaign Schedule</p>
 
-            <Separator />
+                <RadioGroup
+                  value={formik.values.schedule}
+                  onValueChange={(val) => formik.setFieldValue("schedule", val)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="always" id="always" />
+                    <label htmlFor="always" className="text-sm">Run ads all the time</label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="schedule" id="schedule" />
+                    <label htmlFor="schedule" className="text-sm">Run ads on a schedule</label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+                {formik.values.schedule === "schedule" && (
+                <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+
+                  <h3 className="text-sm font-medium mb-3">Time period for budget increase</h3>
+
+                  {formik.values.schedulePeriods.map((p, index) => (
+                    <div key={index} className="mb-6 p-3 bg-white border rounded-lg">
+
+                      {/* Start / End Date */}
+                      <div className="flex gap-4 mb-4">
+                        <div className="flex flex-col">
+                          <label className="text-xs mb-1">Starts on</label>
+                          <Input
+                            type="datetime-local"
+                            value={p.startDate}
+                            onChange={(e) =>
+                              formik.setFieldValue(`schedulePeriods.${index}.startDate`, e.target.value)
+                            }
+                            className="w-[240px]"
+                          />
+                        </div>
+
+                        <div className="flex flex-col">
+                          <label className="text-xs mb-1">Ends on</label>
+                          <Input
+                            type="datetime-local"
+                            value={p.endDate}
+                            onChange={(e) =>
+                              formik.setFieldValue(`schedulePeriods.${index}.endDate`, e.target.value)
+                            }
+                            className="w-[240px]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Increase Type + Amount */}
+                      <div className="flex items-center justify-between gap-4 w-full">
+
+                        {/* Increase Type */}
+                        <div className="flex-1">
+                          <Select
+                            value={p.increaseType}
+                            onValueChange={(val) =>
+                              formik.setFieldValue(`schedulePeriods.${index}.increaseType`, val)
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Increase daily budget" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                              {ScheduleIncreaseType.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Increase Amount */}
+                        <div className="flex items-center gap-2 w-[200px]">
+                          <Input
+                            type="number"
+                            placeholder="Amount"
+                            value={p.increaseAmount}
+                            onChange={(e) =>
+                              formik.setFieldValue(
+                                `schedulePeriods.${index}.increaseAmount`,
+                                e.target.value
+                              )
+                            }
+                          />
+                          <span className="text-sm w-10">
+                            {p.increaseType === "value" ? "IDR" : "%"}
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Separator />
+
 
             {/* Campaign Name */}
             <div>
@@ -332,13 +392,6 @@ export default function CreateCampaign() {
             </div>
 
             <Separator />
-
-            {/* Submit */}
-            <div className="flex justify-end">
-              <Button type="submit" className="">
-                Submit Campaign
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </form>
