@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { CommonHeader } from "@/components/common/common-header"
 import { Formik, Form, FieldArray, ErrorMessage } from "formik"
 import * as Yup from "yup"
-import { useEffect, useState } from "react" 
-import { getCustomAudiences } from "@/features/ad-set/api"
+import { useEffect, useState } from "react"
+import { getCustomAudiences, getLocations } from "@/features/ad-set/api"
 import { CustomAudience } from "@/features/ad-set/type"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useDebounce } from "use-debounce"
+
 
 const AdSetSchema = Yup.object().shape({
   adsets: Yup.array()
@@ -42,39 +44,65 @@ const initialValues = {
       placement: "AUTOMATIC",
       conversionWindow: "7DAYS_CLICK",
       adSetName: "",
+      frequencyType: "LIMIT",
+      frequencyTimes: 2,
+      frequencyDays: 7,
     },
   ],
 }
 
-
-
 export default function CreateAdSet() {
-  const [audiences, setAudiences] = useState<CustomAudience[]>([]);
-  const adAccountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID!;
+  const [audiences, setAudiences] = useState<CustomAudience[]>([])
+  const [suggestions, setSuggestions] = useState<any[]>([]) //  untuk menyimpan hasil lokasi
+  const [searchQuery, setSearchQuery] = useState("") // untuk input pencarian lokasi
+  const [debouncedQuery] = useDebounce(searchQuery, 1500) // supaya tidak spam API
 
-  useEffect(() => {
-  async function fetchAudiences() {
-    try {
-      const data = await getCustomAudiences(adAccountId);
-      console.log("Audiences loaded:", data);
-      setAudiences(data);
-    } catch (err) {
-      console.error("Error loading audiences:", err);
-    }
-  }
-  fetchAudiences();
-}, [adAccountId]);
+  const adAccountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID!
 
-  return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={AdSetSchema}
-      onSubmit={(values) => {
-        console.log("AdSet Values:", values)
-        alert("Ad Set(s) created successfully!")
-      }}
-    >
-      {({ values, handleChange, handleBlur, setFieldValue }) => (
+  // 🔹 Fetch Custom Audiences
+    useEffect(() => {
+      async function fetchAudiences() {
+        try {
+          const data = await getCustomAudiences(adAccountId)
+          console.log("Audiences loaded:", data)
+          setAudiences(data)
+        } catch (err) {
+          console.error("Error loading audiences:", err)
+        }
+      }
+      fetchAudiences()
+    }, [adAccountId])
+
+    // 🔹 Fetch Location Suggestions (berdasarkan query)
+    useEffect(() => {
+      if (!debouncedQuery || debouncedQuery.length < 2) {
+        setSuggestions([])
+        return
+      }
+
+      async function fetchLocations() {
+        try {
+          const locations = await getLocations(debouncedQuery)
+          console.log("Location suggestions:", locations)
+          setSuggestions(locations)
+        } catch (err) {
+          console.error("Error fetching locations:", err)
+        }
+      }
+
+      fetchLocations()
+    }, [debouncedQuery])
+
+    return (
+      <Formik
+        initialValues={initialValues}
+        validationSchema={AdSetSchema}
+        onSubmit={(values) => {
+          console.log("AdSet Values:", values)
+          alert("Ad Set(s) created successfully!")
+        }}
+      >
+        {({ values, handleChange, handleBlur, setFieldValue }) => (
         <Form className=" w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* KOLOM KIRI — FORM */}
@@ -100,22 +128,46 @@ export default function CreateAdSet() {
                         </CardHeader>
 
                         <CardContent className="space-y-4">
-                          {/* LOCATION */}
+                          {/* LOCATION FIELD */}
                           <div className="space-y-2">
                             <Label>Location</Label>
-                            <Input
-                              name={`adsets.${idx}.location`}
-                              placeholder="e.g. Indonesia"
+
+                            <Select
                               value={adset.location}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                            />
+                              onValueChange={(val) => setFieldValue(`adsets.${idx}.location`, val)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Search or select location" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <div className="p-2">
+                                  <Input
+                                    placeholder="Type to search..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="mb-2"
+                                  />
+                                </div>
+
+                                {suggestions.length > 0 ? (
+                                  suggestions.map((loc, i) => (
+                                    <SelectItem key={i} value={loc.name}>
+                                      {loc.name} ({loc.type})
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="p-2 text-gray-500 text-sm">No locations found</div>
+                                )}
+                              </SelectContent>
+                            </Select>
+
                             <ErrorMessage
                               name={`adsets.${idx}.location`}
                               component="p"
                               className="text-red-500 text-sm"
                             />
                           </div>
+
 
                           {/* CUSTOM AUDIENCE */}
                           <div className="space-y-2">
@@ -224,31 +276,69 @@ export default function CreateAdSet() {
                             </Select>
                           </div>
 
-                          {/* CONVERSION WINDOW */}
+                          {/* FREQUENCY CONTROL */}
                           <div className="space-y-2">
-                            <Label>Conversion Window</Label>
-                            <Select
-                              value={adset.conversionWindow}
-                              onValueChange={(val) =>
-                                setFieldValue(
-                                  `adsets.${idx}.conversionWindow`,
-                                  val
-                                )
-                              }
+                            <Label>Frequency Control</Label>
+
+                            <RadioGroup
+                              value={adset.frequencyType}
+                              onValueChange={(val) => setFieldValue(`adsets.${idx}.frequencyType`, val)}
+                              className="space-y-3 mt-5"
                             >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select conversion window" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="7DAYS_CLICK">
-                                  7 Days Click or 1 Day View
-                                </SelectItem>
-                                <SelectItem value="1DAY_CLICK">
-                                  1 Day Click
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                              {/* Target Option */}
+                              <div className="flex items-start gap-3">
+                                <RadioGroupItem value="TARGET" id={`target-${idx}`} />
+                                <div className="flex flex-col">
+                                  <Label htmlFor={`target-${idx}`} className="font-medium">
+                                    Target
+                                  </Label>
+                                  <span className="text-sm text-gray-500">
+                                    The average number of times you want people to see your ad
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Limit Option */}
+                              <div className="flex items-start gap-3">
+                                <RadioGroupItem value="LIMIT" id={`limit-${idx}`} />
+                                <div className="flex flex-col w-full">
+                                  <Label htmlFor={`limit-${idx}`} className="font-medium">
+                                    Limit
+                                  </Label>
+                                  <span className="text-sm text-gray-500 mb-3">
+                                    The maximum number of times you want people to see your ad
+                                  </span>
+
+                                  {/* Input group (times & days) */}
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      name={`adsets.${idx}.frequencyTimes`}
+                                      value={adset.frequencyTimes}
+                                      onChange={handleChange}
+                                      className="w-16"
+                                    />
+                                    <span>times every</span>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      name={`adsets.${idx}.frequencyDays`}
+                                      value={adset.frequencyDays}
+                                      onChange={handleChange}
+                                      className="w-16"
+                                    />
+                                    <span>day(s)</span>
+                                  </div>
+
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    As a maximum, we will try to stay under {adset.frequencyTimes} impressions every {adset.frequencyDays} days.
+                                  </p>
+                                </div>
+                              </div>
+                            </RadioGroup>
                           </div>
+
 
                           {/* AD SET NAME */}
                           <div className="space-y-2">
