@@ -1,4 +1,7 @@
-import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignObjectiveItem, CreateCampaignParams } from "./type"
+'use client';
+import { getSession } from "next-auth/react";
+import { Campaign } from "@/features/campaign/type";
+import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignBudget, CampaignBidStrategy } from "./type"
 
 
 
@@ -189,3 +192,31 @@ export async function createCampaignParams({
 //     bid_strategy: item.bid_strategy,
 //   }));
 // }
+
+
+export async function getCampaigns(): Promise<Campaign[]> {
+  const session = await getSession();
+
+  if (!session?.accessToken) {
+    throw new Error("No FB access token in session");
+  }
+
+  const accessToken = session.accessToken;
+  const accountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID;
+
+  if (!accountId) {
+    throw new Error("Missing env: NEXT_PUBLIC_AD_ACCOUNT_ID");
+  }
+
+  const res = await fetch(
+    `https://graph.facebook.com/v23.0/act_${accountId}/campaigns?fields=id,name,status,objective,effective_status&access_token=${accessToken}`,
+    { method: "GET" },
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch campaigns: ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  return data.data || [];
+}
