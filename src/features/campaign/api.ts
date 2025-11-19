@@ -104,7 +104,12 @@ export async function createCampaignParams({
   accessToken,
   name,
   objective,
-}: CreateCampaignParams): Promise<CreateCampaignResponse> {
+}: {
+  adAccountId: string;
+  accessToken: string;
+  name: string;
+  objective: string;
+}): Promise<CreateCampaignResponse> {
   if (!accessToken || !adAccountId) {
     throw new Error("Missing adAccountId or accessToken");
   }
@@ -128,9 +133,6 @@ export async function createCampaignParams({
   if (!res.ok) {
     console.error("Error creating campaign:", data);
     throw new Error(data.error?.message || "Failed to create campaign");
-  }
-
-  return data;
   }
 
   // Transform data ke bentuk yang kita definisikan
