@@ -1,4 +1,4 @@
-import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignObjectiveItem, CreateCampaignParams } from "./type"
+import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignObjectiveItem } from "./type"
 
 
 export async function createCampaign(form: CampaignForm): Promise<CreateCampaignResponse> {
@@ -90,39 +90,39 @@ export async function getCampaignObjectives(accessToken: string) {
 //   return [];
 // }
 
-export async function createCampaignParams({
-  adAccountId,
-  accessToken,
-  name,
-  objective,
-}: CreateCampaignParams): Promise<CreateCampaignResponse> {
-  if (!accessToken || !adAccountId) {
-    throw new Error("Missing adAccountId or accessToken");
-  }
+// export async function createCampaignParams({
+//   adAccountId,
+//   accessToken,
+//   name,
+//   objective,
+// }: CreateCampaignParams): Promise<CreateCampaignResponse> {
+//   if (!accessToken || !adAccountId) {
+//     throw new Error("Missing adAccountId or accessToken");
+//   }
 
-  const url = `https://graph.facebook.com/v23.0/act_${adAccountId}/campaigns`;
+//   const url = `https://graph.facebook.com/v23.0/act_${adAccountId}/campaigns`;
 
-  const payload = new URLSearchParams();
-  payload.append("name", name);
-  payload.append("objective", objective);
-  payload.append("status", "PAUSED");
-  payload.append("special_ad_categories", "[]");
-  payload.append("access_token", accessToken);
+//   const payload = new URLSearchParams();
+//   payload.append("name", name);
+//   payload.append("objective", objective);
+//   payload.append("status", "PAUSED");
+//   payload.append("special_ad_categories", "[]");
+//   payload.append("access_token", accessToken);
 
-  const res = await fetch(url, {
-    method: "POST",
-    body: payload,
-  });
+//   const res = await fetch(url, {
+//     method: "POST",
+//     body: payload,
+//   });
 
-  const data = await res.json();
+//   const data = await res.json();
 
-  if (!res.ok) {
-    console.error("Error creating campaign:", data);
-    throw new Error(data.error?.message || "Failed to create campaign");
-  }
+//   if (!res.ok) {
+//     console.error("Error creating campaign:", data);
+//     throw new Error(data.error?.message || "Failed to create campaign");
+//   }
 
-  return data;
-  }
+//   return data;
+//   }
 
 // export async function createCampaign(form: CampaignForm): Promise<CreateCampaignResponse> {
 //   const accessToken = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN;
