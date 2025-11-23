@@ -5,12 +5,34 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { getSavedAudiences } from "@/features/ad-set/api";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 type CreateAdSetProps = {
   formik: FormikValues;
 };
 
 export default function CreateAdSet({ formik }: CreateAdSetProps) {
+  const [savedAudiences, setSavedAudiences] = useState([]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getSavedAudiences(formik.values.selectedAdAccount);
+        setSavedAudiences(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (formik.values.selectedAdAccount) {
+      load();
+    }
+  }, [formik.values.selectedAdAccount]);
+
+
   return (
     <div className="w-full">
       <Card className="shadow-lg border w-full">
@@ -34,6 +56,57 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
               <p className="text-xs text-red-500 mt-1">{formik.errors.adset.name}</p>
             )}
           </div>
+
+          <Separator />
+          <div>
+            <h2 className="font-semibold mb-2">Saved Audience</h2>
+            <p className="text-sm text-gray-500 mb-2">
+              Select Saved Audience (multiple allowed)
+            </p>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[300px] justify-between">
+                  {formik.values.adset.saved_audience_ids.length > 0
+                    ? `${formik.values.adset.saved_audience_ids.length} selected`
+                    : "Choose Saved Audience"}
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-[300px] p-2">
+                <div className="flex flex-col gap-2">
+                  {savedAudiences.map((sa) => {
+                    const checked = formik.values.adset.saved_audience_ids.includes(sa.id);
+
+                    return (
+                      <label
+                        key={sa.id}
+                        className="flex items-center gap-2 cursor-pointer p-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            let current = [...formik.values.adset.saved_audience_ids];
+
+                            if (checked) {
+                              current = current.filter((x) => x !== sa.id);
+                            } else {
+                              current.push(sa.id);
+                            }
+
+                            formik.setFieldValue("adset.saved_audience_ids", current);
+                          }}
+                        />
+                        <span>{sa.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
 
           <Separator />
 

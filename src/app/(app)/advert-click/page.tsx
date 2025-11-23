@@ -59,6 +59,7 @@ const initialValues = {
         name: "",
         daily_budget: 1000,
         geo_locations: { countries: ["US"] },
+        saved_audience_ids: [],
     },
     ad: { name: "", creative_id: "", status: "ACTIVE", image_file: null, image_hash: "", },
 };
@@ -77,7 +78,7 @@ export default function Component() {
         <Formik
             initialValues={initialValues}
             validationSchema={FullSchema}
-            onSubmit={async (values, {resetForm}) => {
+            onSubmit={async (values, { resetForm }) => {
                 try {
                     // === 1. CAMPAIGN ===
                     const cForm = new FormData();
@@ -95,102 +96,107 @@ export default function Component() {
                     const cJson = await cRes.json();
                     if (!cJson.id) throw new Error("Campaign failed");
 
-                    // === 2. AD SET ===
-                    const aForm = new FormData();
-                    aForm.append("name", values.adset.name);
-                    aForm.append("campaign_id", cJson.id);
-                    aForm.append("daily_budget", String(values.adset.daily_budget));
-                    aForm.append("billing_event", 'IMPRESSIONS');
-                    aForm.append("bid_strategy", 'LOWEST_COST_WITHOUT_CAP');
-                    aForm.append(
-                        "targeting",
-                        JSON.stringify({ geo_locations: values.adset.geo_locations })
-                    );
-                    aForm.append("access_token", accessToken);
+                    // === 2. AD SET (LOOP PER audienceId) ===
+                    for (const audienceId of values.adset.saved_audience_ids) {
 
-                    const aRes = await fetch(
-                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adsets`,
-                        { method: "POST", body: aForm }
-                    );
-                    const aJson = await aRes.json();
-                    if (!aJson.id) throw new Error("Ad Set failed");
+                        // ----------------------------------------
+                        // 2A. CREATE AD SET
+                        // ----------------------------------------
+                        const aForm = new FormData();
+                        aForm.append("name", values.adset.name + " - " + audienceId);
+                        aForm.append("campaign_id", cJson.id);
+                        aForm.append("daily_budget", String(values.adset.daily_budget));
+                        aForm.append("billing_event", "IMPRESSIONS");
+                        aForm.append("bid_strategy", "LOWEST_COST_WITHOUT_CAP");
 
+                        // gunakan saved audience
+                        aForm.append("audience_id", audienceId);
 
-                    // =============================================
-                    // 3. UPLOAD IMAGE → /adimages
-                    // =============================================
-                    const imgForm = new FormData();
-                    if (!values.ad.image_file) {
-                        throw new Error("No image selected");
+                        aForm.append(
+                            "targeting",
+                            JSON.stringify({
+                                geo_locations: values.adset.geo_locations,
+                            })
+                        );
+
+                        aForm.append("access_token", accessToken);
+
+                        const aRes = await fetch(
+                            `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adsets`,
+                            { method: "POST", body: aForm }
+                        );
+
+                        const aJson = await aRes.json();
+                        if (!aJson.id) throw new Error("Ad Set failed for audience: " + audienceId);
+
+                        // ----------------------------------------
+                        // 3. UPLOAD IMAGE (PER ADSET)
+                        // ----------------------------------------
+                        const imgForm = new FormData();
+                        imgForm.append("filename", values.ad.image_file);
+                        imgForm.append("access_token", accessToken);
+
+                        const imgRes = await fetch(
+                            `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adimages`,
+                            { method: "POST", body: imgForm }
+                        );
+
+                        const imgJson = await imgRes.json();
+                        const imageHash =
+                            imgJson?.images?.[values.ad.image_file.name]?.hash;
+
+                        if (!imageHash) throw new Error("Image upload failed");
+
+                        // ----------------------------------------
+                        // 4. CREATE CREATIVE (PER ADSET)
+                        // ----------------------------------------
+                        const creativeForm = new FormData();
+                        creativeForm.append("name", values.ad.name + " - " + audienceId);
+                        creativeForm.append(
+                            "object_story_spec",
+                            JSON.stringify({
+                                page_id: "822499580957870",
+                                link_data: {
+                                    image_hash: imageHash,
+                                    link: "https://example.com",
+                                },
+                            })
+                        );
+                        creativeForm.append("access_token", accessToken);
+
+                        const creativeRes = await fetch(
+                            `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adcreatives`,
+                            { method: "POST", body: creativeForm }
+                        );
+                        const creativeJson = await creativeRes.json();
+                        if (!creativeJson.id) throw new Error("Creative failed per audience");
+
+                        // ----------------------------------------
+                        // 5. CREATE AD (PER ADSET)
+                        // ----------------------------------------
+                        const adForm = new FormData();
+                        adForm.append("name", values.ad.name + " - " + audienceId);
+                        adForm.append("adset_id", aJson.id);
+                        adForm.append(
+                            "creative",
+                            JSON.stringify({ creative_id: creativeJson.id })
+                        );
+                        adForm.append("status", values.ad.status);
+                        adForm.append("access_token", accessToken);
+
+                        const adRes = await fetch(
+                            `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/ads`,
+                            { method: "POST", body: adForm }
+                        );
+
+                        const adJson = await adRes.json();
+                        if (!adJson.id) throw new Error("Ad failed per audience");
                     }
 
-                    imgForm.append("filename", values.ad.image_file);
-
-                    imgForm.append("access_token", accessToken);
-
-
-                    const imgRes = await fetch(
-                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adimages`,
-                        { method: "POST", body: imgForm }
-                    );
-                    const imgJson = await imgRes.json();
-                    const imageHash = imgJson?.images?.[values.ad.image_file.name]?.hash;
-                    if (!imageHash) throw new Error("Image upload failed");
-                    values.ad.image_hash = imageHash;
-
-
-                    // =============================================
-                    // 4. CREATE CREATIVE
-                    // =============================================
-                    const creativeForm = new FormData();
-                    creativeForm.append("name", values.ad.name);
-                    creativeForm.append(
-                        "object_story_spec",
-                        JSON.stringify({
-                            page_id: "822499580957870", // (masih static dari FB Gilang) wajib
-                            link_data: {
-                                image_hash: values.ad.image_hash,
-                                link: "https://example.com",
-                            },
-                        })
-                    );
-                    creativeForm.append("access_token", accessToken);
-
-
-                    const creativeRes = await fetch(
-                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adcreatives`,
-                        { method: "POST", body: creativeForm }
-                    );
-                    const creativeJson = await creativeRes.json();
-                    if (!creativeJson.id) throw new Error("Creative failed");
-
-
-                    values.ad.creative_id = creativeJson.id;
-
-
-                    // =============================================
-                    // 5. CREATE AD
-                    // =============================================
-                    const adForm = new FormData();
-                    adForm.append("name", values.ad.name);
-                    adForm.append("adset_id", aJson.id);
-                    adForm.append(
-                        "creative",
-                        JSON.stringify({ creative_id: values.ad.creative_id })
-                    );
-                    adForm.append("status", values.ad.status);
-                    adForm.append("access_token", accessToken);
-
-                    const adRes = await fetch(
-                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/ads`,
-                        { method: "POST", body: adForm }
-                    );
-                    const adJson = await adRes.json();
-                    if (!adJson.id) throw new Error("Ad failed");
 
                     showAlert("Success", "All items created successfully.", "success");
                     setCurrentStep(1);
-                    resetForm();                    
+                    resetForm();
                 } catch (e) {
                     console.error(e);
                     showAlert("Error", "Failed creating items", "error");
