@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FormikValues, useFormik } from "formik";
+import { FormikValues } from "formik";
 import * as Yup from "yup";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Plus } from "lucide-react";
 import { getAdAccounts } from "@/features/campaign/api";
@@ -140,8 +139,8 @@ export default function CreateCampaign({formik}: CreateCampaignProps) {
               <h2 className="font-semibold mb-2">Objective</h2>
               <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
               <Select
-                value={formik.values.objective}
-                onValueChange={(val) => formik.setFieldValue("objective", val)}
+                value={formik.values.campaign.objective}
+                onValueChange={(val) => formik.setFieldValue("campaign.objective", val)}
               >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select Objective" />
@@ -154,8 +153,8 @@ export default function CreateCampaign({formik}: CreateCampaignProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {formik.touched.objective && formik.errors.objective && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.objective}</p>
+              {formik.touched.campaign && formik.errors.campaign && (
+                <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.objective}</p>
               )}
             </div>
 
@@ -166,15 +165,15 @@ export default function CreateCampaign({formik}: CreateCampaignProps) {
               <h2 className="font-semibold mb-2">Campaign Name</h2>
               <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
                 <Input
-                  name="campaignName"
+                  name="name"
                   placeholder="Enter Campaign Name"
-                  value={formik.values.campaignName}
-                  onChange={formik.handleChange("campaignName")}
-                  onBlur={formik.handleBlur("campaignName")}
+                  value={formik.values.campaign.name}
+                  onChange={formik.handleChange("campaign.name")}
+                  onBlur={formik.handleBlur("campaign.name")}
                   className="w-[300px]"
                 />
-                {formik.touched.campaignName && formik.errors.campaignName && (
-                  <p className="text-xs text-red-500 mt-1">{formik.errors.campaignName}</p>
+                {formik.touched.campaign && formik.errors.campaign && (
+                  <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.name}</p>
                 )}
             </div>
 

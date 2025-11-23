@@ -1,207 +1,216 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { Button } from "@/components/ui/button";
 import {
-  Stepper,
-  StepperContent,
-  StepperIndicator,
-  StepperItem,
-  StepperNav,
-  StepperPanel,
-  StepperSeparator,
-  StepperTitle,
-  StepperTrigger,
+    Stepper,
+    StepperContent,
+    StepperIndicator,
+    StepperItem,
+    StepperNav,
+    StepperPanel,
+    StepperSeparator,
+    StepperTitle,
+    StepperTrigger,
 } from "@/components/ui/stepper";
 import {
-  Check,
-  LoaderCircleIcon,
-  Megaphone,
-  Target,
-  Layers,
+    Check,
+    LoaderCircleIcon,
+    Megaphone,
+    Target,
+    Layers,
 } from "lucide-react";
 import { CommonHeader } from "@/components/common/common-header";
 import CreateCampaign from "./_components/create-campaign";
 import CreateAdSet from "./_components/create-ad-set";
 import CreateAd from "./_components/create-ad";
+import { getSession } from "next-auth/react";
+import { useAlert } from "@/hooks/use-alert";
 
 const FullSchema = Yup.object().shape({
-  campaign: Yup.object().shape({
-    name: Yup.string().required("Required"),
-    objective: Yup.string().required("Required"),
-    status: Yup.string().required("Required"),
-  }),
-  adset: Yup.object().shape({
-    name: Yup.string().required("Required"),
-    daily_budget: Yup.number().required("Required").min(100),
-    geo_locations: Yup.object().shape({
-      countries: Yup.array().of(Yup.string()).min(1, "Required"),
+    campaign: Yup.object().shape({
+        name: Yup.string().required("Required"),
+        objective: Yup.string().required("Required"),
+        status: Yup.string().required("Required"),
+        special_ad_categories: Yup.array().of(Yup.string()).min(1, "Required"),
     }),
-  }),
-  ad: Yup.object().shape({
-    name: Yup.string().required("Required"),
-    creative_id: Yup.string().required("Required"),
-    status: Yup.string().required("Required"),
-  }),
+    adset: Yup.object().shape({
+        name: Yup.string().required("Required"),
+        daily_budget: Yup.number().required("Required").min(100),
+        geo_locations: Yup.object().shape({
+            countries: Yup.array().of(Yup.string()).min(1, "Required"),
+        }),
+    }),
+    ad: Yup.object().shape({
+        name: Yup.string().required("Required"),
+        creative_id: Yup.string().required("Required"),
+        status: Yup.string().required("Required"),
+    }),
 });
 
 
 const initialValues = {
-  selectedAdAccount: "",
-  campaign: { name: "", objective: "LINK_CLICKS", status: "PAUSED" },
-  adset: {
-    name: "",
-    daily_budget: 1000,
-    geo_locations: { countries: ["US"] },
-  },
-  ad: { name: "", creative_id: "", status: "ACTIVE" },
+    selectedAdAccount: "",
+    campaign: { name: "", objective: "OUTCOME_AWARENESS", status: "PAUSED", special_ad_categories: ["NONE"] },
+    adset: {
+        name: "",
+        daily_budget: 1000,
+        geo_locations: { countries: ["US"] },
+    },
+    ad: { name: "", creative_id: "", status: "ACTIVE" },
 };
 
 const steps = [
-  { title: "Campaign", icon: Megaphone },
-  { title: "Ad Set", icon: Target },
-  { title: "Ad", icon: Layers },
+    { title: "Campaign", icon: Megaphone },
+    { title: "Ad Set", icon: Target },
+    { title: "Ad", icon: Layers },
 ];
 
 export default function Component() {
-  const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(1);
+    const accessToken = 'EAAPZB0wXT18ABP0T3ikLlNiOeUBfnrQRamhYVfUZCSHEpt9ZA5UovMy5wkACZBoQ5ZB94DgiIogBnrwuweYZAZBY3wi7zhNSMa5eZCdj8Sv6Jzdr6CW3zJ4OFpPkWbj1s1uUDRcfasZBepGQDTcqAg8K7ZC3CpdjNS7cZCZCe9pqd177O4ZCTZB6pMxgcxvqHFFP3XFFvYDY1bGZBysNRre9PaSCwkv2pnatvmM0FCIJ5BqZAth64VPOywnUdMpf1Wl1ZCU54WTJS2vkooCrqGMp0nmCX1gsLCydrXJZBuMTA1';
+    const { showAlert} = useAlert();
+    return (
+        <Formik
+            initialValues={initialValues}
+            validationSchema={FullSchema}
+            onSubmit={async (values) => {
+                try {
+                    // === 1. CAMPAIGN ===
+                    const cForm = new FormData();
+                    cForm.append("name", values.campaign.name);
+                    cForm.append("objective", values.campaign.objective);
+                    cForm.append("status", values.campaign.status);
+                    cForm.append("special_ad_categories", JSON.stringify(values.campaign.special_ad_categories));
+                    cForm.append("is_adset_budget_sharing_enabled", "false");                    
+                    cForm.append("access_token", accessToken);
 
-  return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={FullSchema}
-      onSubmit={async (values) => {
-        try {
-          // === 1. CAMPAIGN ===
-          const cForm = new FormData();
-          cForm.append("name", values.campaign.name);
-          cForm.append("objective", values.campaign.objective);
-          cForm.append("status", values.campaign.status);
-          cForm.append("access_token", process.env.NEXT_PUBLIC_META_TOKEN!);
+                    const cRes = await fetch(
+                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/campaigns`,
+                        { method: "POST", body: cForm }
+                    );
+                    const cJson = await cRes.json();
+                    if (!cJson.id) throw new Error("Campaign failed");
 
-          const cRes = await fetch(
-            `https://graph.facebook.com/v24.0/act_${process.env.NEXT_PUBLIC_AD_ACCOUNT_ID}/campaigns`,
-            { method: "POST", body: cForm }
-          );
-          const cJson = await cRes.json();
-          if (!cJson.id) throw new Error("Campaign failed");
+                    // === 2. AD SET ===
+                    const aForm = new FormData();
+                    aForm.append("name", values.adset.name);
+                    aForm.append("campaign_id", cJson.id);
+                    aForm.append("daily_budget", String(values.adset.daily_budget));
+                    aForm.append("billing_event", 'IMPRESSIONS');
+                    aForm.append("bid_strategy", 'LOWEST_COST_WITHOUT_CAP');
+                    aForm.append(
+                        "targeting",
+                        JSON.stringify({ geo_locations: values.adset.geo_locations })
+                    );
+                    aForm.append("access_token", accessToken);
 
-          // === 2. AD SET ===
-          const aForm = new FormData();
-          aForm.append("name", values.adset.name);
-          aForm.append("campaign_id", cJson.id);
-          aForm.append("daily_budget", String(values.adset.daily_budget));
-          aForm.append(
-            "targeting",
-            JSON.stringify({ geo_locations: values.adset.geo_locations })
-          );
-          aForm.append("access_token", process.env.NEXT_PUBLIC_META_TOKEN!);
+                    const aRes = await fetch(
+                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adsets`,
+                        { method: "POST", body: aForm }
+                    );
+                    const aJson = await aRes.json();
+                    if (!aJson.id) throw new Error("Ad Set failed");
 
-          const aRes = await fetch(
-            `https://graph.facebook.com/v24.0/act_${process.env.NEXT_PUBLIC_AD_ACCOUNT_ID}/adsets`,
-            { method: "POST", body: aForm }
-          );
-          const aJson = await aRes.json();
-          if (!aJson.id) throw new Error("Ad Set failed");
+                    // === 3. AD ===
+                    const adForm = new FormData();
+                    adForm.append("name", values.ad.name);
+                    adForm.append("adset_id", aJson.id);
+                    adForm.append(
+                        "creative",
+                        JSON.stringify({ creative_id: values.ad.creative_id })
+                    );
+                    adForm.append("status", values.ad.status);
+                    adForm.append("access_token", accessToken);
 
-          // === 3. AD ===
-          const adForm = new FormData();
-          adForm.append("name", values.ad.name);
-          adForm.append("adset_id", aJson.id);
-          adForm.append(
-            "creative",
-            JSON.stringify({ creative_id: values.ad.creative_id })
-          );
-          adForm.append("status", values.ad.status);
-          adForm.append("access_token", process.env.NEXT_PUBLIC_META_TOKEN!);
+                    const adRes = await fetch(
+                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/ads`,
+                        { method: "POST", body: adForm }
+                    );
+                    const adJson = await adRes.json();
+                    if (!adJson.id) throw new Error("Ad failed");
 
-          const adRes = await fetch(
-            `https://graph.facebook.com/v24.0/act_${process.env.NEXT_PUBLIC_AD_ACCOUNT_ID}/ads`,
-            { method: "POST", body: adForm }
-          );
-          const adJson = await adRes.json();
-          if (!adJson.id) throw new Error("Ad failed");
-
-          alert("All Created Successfully!");
-        } catch (e) {
-          console.error(e);
-          alert("Failed creating items");
-        }
-      }}
-    >
-      {({ values, errors, touched, handleChange, setFieldValue , handleBlur, handleReset}) => (
-        <Form>
-          <CommonHeader title="Advert Click" subtitle="Kelola Campaign, Ad Set, Ad." />
-          <div className="h-10"></div>
-
-          <Stepper
-            value={currentStep}
-            onValueChange={setCurrentStep}
-            indicators={{
-              completed: <Check className="size-4" />,
-              loading: <LoaderCircleIcon className="size-4 animate-spin" />,
+                    // alert("All Created Successfully!");
+                    showAlert("Success", "All items created successfully.", "success");
+                } catch (e) {
+                    console.error(e);
+                    alert("Failed creating items");
+                }
             }}
-            className="space-y-8"
-          >
-            <StepperNav className="gap-3 mb-15">
-              {steps.map((step, index) => (
-                <StepperItem key={index} step={index + 1} className="relative flex-1 items-start">
-                  <StepperTrigger className="flex flex-col items-start justify-center gap-2.5 grow" asChild>
-                    <StepperIndicator className="size-8 border-2 data-[state=completed]:bg-green-500">
-                      <step.icon className="size-4" />
-                    </StepperIndicator>
-                    <div className="flex flex-col items-start gap-1">
-                      <div className="text-[10px] font-semibold uppercase text-muted-foreground">
-                        Step {index + 1}
-                      </div>
-                      <StepperTitle className="text-start text-base font-semibold">
-                        {step.title}
-                      </StepperTitle>
-                    </div>
-                  </StepperTrigger>
+        >
+            {({ values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset, handleSubmit }) => (
+                <Form>
+                    <CommonHeader title="Advert Click" subtitle="Kelola Campaign, Ad Set, Ad." />
+                    <div className="h-10"></div>
 
-                  {steps.length > index + 1 && (
-                    <StepperSeparator className="absolute top-4 inset-x-0 start-9" />
-                  )}
-                </StepperItem>
-              ))}
-            </StepperNav>
+                    <Stepper
+                        value={currentStep}
+                        onValueChange={setCurrentStep}
+                        indicators={{
+                            completed: <Check className="size-4" />,
+                            loading: <LoaderCircleIcon className="size-4 animate-spin" />,
+                        }}
+                        className="space-y-8"
+                    >
+                        <StepperNav className="gap-3 mb-15">
+                            {steps.map((step, index) => (
+                                <StepperItem key={index} step={index + 1} className="relative flex-1 items-start">
+                                    <StepperTrigger className="flex flex-col items-start justify-center gap-2.5 grow" asChild>
+                                        <StepperIndicator className="size-8 border-2 data-[state=completed]:bg-green-500">
+                                            <step.icon className="size-4" />
+                                        </StepperIndicator>
+                                        <div className="flex flex-col items-start gap-1">
+                                            <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Step {index + 1}
+                                            </div>
+                                            <StepperTitle className="text-start text-base font-semibold">
+                                                {step.title}
+                                            </StepperTitle>
+                                        </div>
+                                    </StepperTrigger>
 
-            <StepperPanel className="text-sm">
-              <StepperContent value={1} className="flex items-center justify-center">
-                <CreateCampaign formik={{values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset}} />
-              </StepperContent>
-              <StepperContent value={2} className="flex items-center justify-center">
-                <CreateAdSet formik={{values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset}} />
-              </StepperContent>
-              <StepperContent value={3} className="flex items-center justify-center">
-                <CreateAd formik={{values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset}} />
-              </StepperContent>
-            </StepperPanel>
+                                    {steps.length > index + 1 && (
+                                        <StepperSeparator className="absolute top-4 inset-x-0 start-9" />
+                                    )}
+                                </StepperItem>
+                            ))}
+                        </StepperNav>
 
-            <div className="flex items-center justify-between gap-2.5">
-              {currentStep > 1 ? (
-                <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)}>
-                  Previous
-                </Button>
-              ) : (
-                <div></div>
-              )}
+                        <StepperPanel className="text-sm">
+                            <StepperContent value={1} className="flex items-center justify-center">
+                                <CreateCampaign formik={{ values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset }} />
+                            </StepperContent>
+                            <StepperContent value={2} className="flex items-center justify-center">
+                                <CreateAdSet formik={{ values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset }} />
+                            </StepperContent>
+                            <StepperContent value={3} className="flex items-center justify-center">
+                                <CreateAd formik={{ values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset }} />
+                            </StepperContent>
+                        </StepperPanel>
 
-              <Button
-                type={currentStep === 3 ? "submit" : "button"}
-                onClick={() => {
-                  if (currentStep < 3) setCurrentStep((prev) => prev + 1);
-                }}
-              >
-                {currentStep > 2 ? "Save" : "Next"}
-              </Button>
-            </div>
-          </Stepper>
-        </Form>
-      )}
-    </Formik>
-  );
+                        <div className="flex items-center justify-between gap-2.5">
+                            {currentStep > 1 ? (
+                                <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)}>
+                                    Previous
+                                </Button>
+                            ) : (
+                                <div></div>
+                            )}
+
+                            <Button
+                                type={currentStep === 3 ? "submit" : "button"}
+                                onClick={() => {
+                                    if (currentStep < 3) setCurrentStep((prev) => prev + 1);
+                                }}
+                            >
+                                {currentStep > 2 ? "Save" : "Next"}
+                            </Button>
+                        </div>
+                    </Stepper>
+                </Form>
+            )}
+        </Formik>
+    );
 }
