@@ -10,10 +10,12 @@ import { Switch } from "@/components/ui/switch"
 import { Formik, Form, FieldArray, ErrorMessage } from "formik"
 import * as Yup from "yup"
 import { useEffect, useState } from "react"
-import { getCustomAudiences, getLocations } from "@/features/ad-set/api"
-import { CustomAudience } from "@/features/ad-set/type"
+import { getAudiences, getLocations, getLookalikeAudiences, getSavedAudiences  } from "@/features/ad-set/api"
+import { Audience } from "@/features/ad-set/type"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useDebounce } from "use-debounce"
+import { AutomaticManualState, CreateAdSetPayload, } from "@/features/ad-set/type";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 const AdSetSchema = Yup.object().shape({
@@ -21,11 +23,10 @@ const AdSetSchema = Yup.object().shape({
     .of(
       Yup.object().shape({
         location: Yup.string().required("Location is required"),
-        customAudience: Yup.string().required("Custom audience is required"),
+        audience: Yup.string().required("Audience is required"),
         ageMin: Yup.number().required().min(13).max(65),
         ageMax: Yup.number().required().min(13).max(65),
         gender: Yup.string().required("Gender is required"),
-        placement: Yup.string().required("Placement is required"),
         conversionWindow: Yup.string().required("Conversion window is required"),
         adSetName: Yup.string().required("Ad set name is required"),
       })
@@ -37,11 +38,10 @@ const initialValues = {
   adsets: [
     {
       location: "",
-      customAudience: "",
+      Audience: "",
       ageMin: 18,
       ageMax: 35,
       gender: "",
-      placement: "AUTOMATIC",
       conversionWindow: "7DAYS_CLICK",
       adSetName: "",
       frequencyType: "LIMIT",
@@ -52,28 +52,61 @@ const initialValues = {
 }
 
 export default function CreateAdSet() {
-  const [audiences, setAudiences] = useState<CustomAudience[]>([])
   const [suggestions, setSuggestions] = useState<any[]>([]) //  untuk menyimpan hasil lokasi
   const [searchQuery, setSearchQuery] = useState("") // untuk input pencarian lokasi
   const [debouncedQuery] = useDebounce(searchQuery, 1500) // supaya tidak spam API
+  const [audiences, setAudiences] = useState<Audience[]>([]);
+  const [lookalikeAudiences, setLookalikeAudiences] = useState<Audience[]>([]);
+  const [savedAudience, setSavedAudience] = useState<Audience[]>([]); // saved audience
+  const [placementMode, setPlacementMode] = useState<AutomaticManualState>(AutomaticManualState.AUTOMATIC );
+  const [manualPlacements, setManualPlacements] = useState<string[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState("ALL")
+  const [manualPlatforms, setManualPlatforms] = useState<string[]>([])
+
 
   const adAccountId = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID!
 
-  // 🔹 Fetch Custom Audiences
+
+  //placement
+  const handleSubmit = async () => {
+    const payload: CreateAdSetPayload = {
+      automatic_manual_state: placementMode,
+
+      ...(placementMode === AutomaticManualState.MANUAL && {
+        manual_placements: manualPlatforms, 
+        device_platform: selectedDevice, 
+        }),
+      optimization_goal: "",
+      billing_event: ""
+    };
+
+    await fetch("/api/create-ad-set", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  };
+
+
+  // Fetch Custom Audiences
     useEffect(() => {
       async function fetchAudiences() {
-        try {
-          const data = await getCustomAudiences(adAccountId)
-          console.log("Audiences loaded:", data)
-          setAudiences(data)
-        } catch (err) {
-          console.error("Error loading audiences:", err)
-        }
-      }
-      fetchAudiences()
-    }, [adAccountId])
+      try {
+        const normal = await getAudiences(adAccountId);
+        const look = await getLookalikeAudiences(adAccountId);
+        const saved = await getSavedAudiences(adAccountId);
 
-    // 🔹 Fetch Location Suggestions (berdasarkan query)
+        setAudiences([...normal, ...look]);
+        setSavedAudience(saved);
+
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          fetchAudiences()
+          }, []) 
+
+    // Fetch Location Suggestions (berdasarkan query)
+  
     useEffect(() => {
       if (!debouncedQuery || debouncedQuery.length < 2) {
         setSuggestions([])
@@ -169,36 +202,38 @@ export default function CreateAdSet() {
                           </div>
 
 
-                          {/* CUSTOM AUDIENCE */}
-                          <div className="space-y-2">
-                            <Label>Custom Audience</Label>
-                            <Select
-                              value={adset.customAudience}
-                              onValueChange={(val) =>
-                                setFieldValue(`adsets.${idx}.customAudience`, val)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select saved audience" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {audiences.length > 0 ? (
-                                  audiences.map((aud) => (
-                                    <SelectItem key={aud.id} value={aud.id}>
-                                      {aud.name}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem disabled value="no-audience">No saved audience found</SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
+                          {/* AUDIENCE */}
+                          <div className="flex justify-between items-center">
+                          <Label>Audience</Label>
+                        
+                          <Select
+                          onValueChange={(val) =>
+                            setFieldValue(`adsets.${idx}.Audience`, val)
+                          } >
                             <ErrorMessage
-                              name={`adsets.${idx}.customAudience`}
+                              name={`adsets.${idx}.Audience`}
                               component="p"
                               className="text-red-500 text-sm"
                             />
-                          </div>
+                            <SelectTrigger className="w-[120px] text-xs">
+                              <SelectValue placeholder="Create new" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <div className="px-2 py-1 text-xs text-gray-500">Saved Audience</div>
+                              {savedAudience.map(a => (
+                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                              ))}
+
+                              <Separator className="my-2"/>
+
+                              <div className="px-2 py-1 text-xs text-gray-500">Custom Audience</div>
+                              {audiences.map(a => (
+                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                              ))}
+
+                            </SelectContent>
+                          </Select>
+                        </div>
 
 
                           {/* AGE RANGE */}
@@ -253,29 +288,87 @@ export default function CreateAdSet() {
                             </Select>
                           </div>
 
-                          {/* PLACEMENT */}
+                          {/* PLACEMENT MODE */}
                           <div className="space-y-2">
-                            <Label>Placement</Label>
+                            <Label>Placements</Label>
+
                             <Select
-                              value={adset.placement}
+                              value={placementMode}
                               onValueChange={(val) =>
-                                setFieldValue(`adsets.${idx}.placement`, val)
+                                setPlacementMode(val as AutomaticManualState)
                               }
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select placement" />
+                                <SelectValue placeholder="Placement mode" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="AUTOMATIC">
-                                  Automatic Placement (Recommended)
+                                <SelectItem value={AutomaticManualState.AUTOMATIC}>
+                                  Automatic
                                 </SelectItem>
-                                <SelectItem value="MANUAL">
+                                <SelectItem value={AutomaticManualState.MANUAL}>
                                   Manual Placement
                                 </SelectItem>
                               </SelectContent>
                             </Select>
+
+                            {placementMode === AutomaticManualState.MANUAL && (
+                              <div className="space-y-2 mt-2">
+                                {/* ====================== DEVICES ====================== */}
+                                <div className="space-y-2">
+                                  <Label className="text-sm">Devices</Label>
+
+                                  <Select
+                                    value={selectedDevice}
+                                    onValueChange={(val) => setSelectedDevice(val)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="All devices (recommended)" />
+                                    </SelectTrigger>
+
+                                    <SelectContent>
+                                      <SelectItem value="ALL">All Devices (Recommended)</SelectItem>
+                                      <SelectItem value="MOBILE">Mobile Only</SelectItem>
+                                      <SelectItem value="DESKTOP">Desktop Only</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* ====================== PLATFORMS ====================== */}
+                                <div>
+                                  <Label className="text-sm">Platforms</Label>
+
+                                  <div className="grid grid-cols-2 gap-3 mt-2">
+                                    {[
+                                      { id: "facebook", label: "Facebook" },
+                                      { id: "instagram", label: "Instagram" },
+                                      { id: "audience_network", label: "Audience Network" },
+                                      { id: "messenger", label: "Messenger" },
+                                      { id: "whatsapp", label: "WhatsApp" },
+                                      { id: "threads", label: "Threads" },
+                                    ].map((item) => (
+                                      <div key={item.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                          checked={manualPlatforms.includes(item.id)}
+                                          onCheckedChange={(checked) => {
+                                            if (checked) {
+                                              setManualPlatforms([...manualPlatforms, item.id])
+                                            } else {
+                                              setManualPlatforms(
+                                                manualPlatforms.filter((p) => p !== item.id)
+                                              )
+                                            }
+                                          }}
+                                        />
+                                        <Label className="font-normal">{item.label}</Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
+      
                           {/* FREQUENCY CONTROL */}
                           <div className="space-y-2">
                             <Label>Frequency Control</Label>
@@ -353,26 +446,6 @@ export default function CreateAdSet() {
                         </CardContent>
                       </Card>
                     ))}
-
-                    {/* Tombol tambah ad set baru */}
-                    {/* <Button
-                      variant="default"
-                      type="button"
-                      onClick={() =>
-                        arrayHelpers.push({
-                          location: "",
-                          customAudience: "",
-                          ageMin: 18,
-                          ageMax: 35,
-                          gender: "",
-                          placement: "AUTOMATIC",
-                          conversionWindow: "7DAYS_CLICK",
-                          adSetName: "",
-                        })
-                      }
-                    >
-                      + Add More Ad Set
-                    </Button> */}
                   </>
                 )}
               />
