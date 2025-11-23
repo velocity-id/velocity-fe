@@ -132,11 +132,10 @@ export default function Component() {
                     const adJson = await adRes.json();
                     if (!adJson.id) throw new Error("Ad failed");
 
-                    // alert("All Created Successfully!");
                     showAlert("Success", "All items created successfully.", "success");
                 } catch (e) {
                     console.error(e);
-                    alert("Failed creating items");
+                    showAlert("Error", "Failed creating items", "error");
                 }
             }}
         >
