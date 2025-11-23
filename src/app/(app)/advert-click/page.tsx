@@ -45,8 +45,9 @@ const FullSchema = Yup.object().shape({
     }),
     ad: Yup.object().shape({
         name: Yup.string().required("Required"),
-        creative_id: Yup.string().required("Required"),
+        // creative_id: Yup.string().required("Required"),
         status: Yup.string().required("Required"),
+        image_file: Yup.mixed().required("Image required"),
     }),
 });
 
@@ -59,7 +60,7 @@ const initialValues = {
         daily_budget: 1000,
         geo_locations: { countries: ["US"] },
     },
-    ad: { name: "", creative_id: "", status: "ACTIVE" },
+    ad: { name: "", creative_id: "", status: "ACTIVE", image_file: null, image_hash: "", },
 };
 
 const steps = [
@@ -71,7 +72,7 @@ const steps = [
 export default function Component() {
     const [currentStep, setCurrentStep] = useState(1);
     const accessToken = 'EAAPZB0wXT18ABP0T3ikLlNiOeUBfnrQRamhYVfUZCSHEpt9ZA5UovMy5wkACZBoQ5ZB94DgiIogBnrwuweYZAZBY3wi7zhNSMa5eZCdj8Sv6Jzdr6CW3zJ4OFpPkWbj1s1uUDRcfasZBepGQDTcqAg8K7ZC3CpdjNS7cZCZCe9pqd177O4ZCTZB6pMxgcxvqHFFP3XFFvYDY1bGZBysNRre9PaSCwkv2pnatvmM0FCIJ5BqZAth64VPOywnUdMpf1Wl1ZCU54WTJS2vkooCrqGMp0nmCX1gsLCydrXJZBuMTA1';
-    const { showAlert} = useAlert();
+    const { showAlert } = useAlert();
     return (
         <Formik
             initialValues={initialValues}
@@ -84,7 +85,7 @@ export default function Component() {
                     cForm.append("objective", values.campaign.objective);
                     cForm.append("status", values.campaign.status);
                     cForm.append("special_ad_categories", JSON.stringify(values.campaign.special_ad_categories));
-                    cForm.append("is_adset_budget_sharing_enabled", "false");                    
+                    cForm.append("is_adset_budget_sharing_enabled", "false");
                     cForm.append("access_token", accessToken);
 
                     const cRes = await fetch(
@@ -114,7 +115,62 @@ export default function Component() {
                     const aJson = await aRes.json();
                     if (!aJson.id) throw new Error("Ad Set failed");
 
-                    // === 3. AD ===
+
+                    // =============================================
+                    // 3. UPLOAD IMAGE → /adimages
+                    // =============================================
+                    const imgForm = new FormData();
+                    if (!values.ad.image_file) {
+                        throw new Error("No image selected");
+                    }
+
+                    imgForm.append("filename", values.ad.image_file);
+
+                    imgForm.append("access_token", accessToken);
+
+
+                    const imgRes = await fetch(
+                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adimages`,
+                        { method: "POST", body: imgForm }
+                    );
+                    const imgJson = await imgRes.json();
+                    const imageHash = imgJson?.images?.[values.ad.image_file.name]?.hash;
+                    if (!imageHash) throw new Error("Image upload failed");
+                    values.ad.image_hash = imageHash;
+
+
+                    // =============================================
+                    // 4. CREATE CREATIVE
+                    // =============================================
+                    const creativeForm = new FormData();
+                    creativeForm.append("name", values.ad.name);
+                    creativeForm.append(
+                        "object_story_spec",
+                        JSON.stringify({
+                            page_id: "822499580957870", // (masih static dari FB Gilang) wajib
+                            link_data: {
+                                image_hash: values.ad.image_hash,
+                                link: "https://example.com",
+                            },
+                        })
+                    );
+                    creativeForm.append("access_token", accessToken);
+
+
+                    const creativeRes = await fetch(
+                        `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/adcreatives`,
+                        { method: "POST", body: creativeForm }
+                    );
+                    const creativeJson = await creativeRes.json();
+                    if (!creativeJson.id) throw new Error("Creative failed");
+
+
+                    values.ad.creative_id = creativeJson.id;
+
+
+                    // =============================================
+                    // 5. CREATE AD
+                    // =============================================
                     const adForm = new FormData();
                     adForm.append("name", values.ad.name);
                     adForm.append("adset_id", aJson.id);
