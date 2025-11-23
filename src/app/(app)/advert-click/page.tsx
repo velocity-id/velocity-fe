@@ -77,7 +77,7 @@ export default function Component() {
         <Formik
             initialValues={initialValues}
             validationSchema={FullSchema}
-            onSubmit={async (values) => {
+            onSubmit={async (values, {resetForm}) => {
                 try {
                     // === 1. CAMPAIGN ===
                     const cForm = new FormData();
@@ -189,6 +189,8 @@ export default function Component() {
                     if (!adJson.id) throw new Error("Ad failed");
 
                     showAlert("Success", "All items created successfully.", "success");
+                    setCurrentStep(1);
+                    resetForm();                    
                 } catch (e) {
                     console.error(e);
                     showAlert("Error", "Failed creating items", "error");
