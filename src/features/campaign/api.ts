@@ -1,7 +1,8 @@
+
 'use client';
 import { getSession } from "next-auth/react";
 import { Campaign } from "@/features/campaign/type";
-import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignBudget, CampaignBidStrategy } from "./type"
+import { CreateCampaignResponse, CampaignForm, CampaignAdAccount, CampaignBudget, CampaignBidStrategy, CampaignObjectiveItem } from "./type";
 
 
 
@@ -94,6 +95,7 @@ export async function getCampaignObjectives(accessToken: string) {
 
   return res.json();
 }
+]
 
 // export async function getCampaignObjectives(): Promise<CampaignObjectiveItem[]> {
 //   return [];
@@ -222,3 +224,4 @@ export async function getCampaigns(): Promise<Campaign[]> {
   const data = await res.json();
   return data.data || [];
 }
+

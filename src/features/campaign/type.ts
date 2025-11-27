@@ -69,25 +69,3 @@ export interface CampaignSchedulePeriod {
   increaseType: ScheduleIncreaseType;
   increaseAmount: number;
 }
-
-export type CampaignBidStrategy = {
-  id: string;
-  name: string;
-  bid_strategy: string;
-};
-export interface Campaign {
-  id: string;
-  name: string;
-  status: string;
-  objective: string;
-  effective_status: string;
-}
-// export type CreateCampaignParams = {
-//   adAccountId: string;
-//   accessToken: string;
-//   name: string;
-//   objective: CampaignObjective;
-//   budgetType: CampaignBudgetType;
-//   budgetCost: number;
-//   bidStrategy: BidStrategy;
-// };
