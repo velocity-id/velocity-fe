@@ -28,6 +28,7 @@ import CreateAdSet from "./_components/create-ad-set";
 import CreateAd from "./_components/create-ad";
 import { getSession } from "next-auth/react";
 import { useAlert } from "@/hooks/use-alert";
+import { useLoading } from "@/hooks/use-loading";
 
 const FullSchema = Yup.object().shape({
     campaign: Yup.object().shape({
@@ -72,6 +73,8 @@ const steps = [
 
 export default function Component() {
     const [currentStep, setCurrentStep] = useState(1);
+    const { setLoading } = useLoading();
+
     const accessToken = 'EAAPZB0wXT18ABP0T3ikLlNiOeUBfnrQRamhYVfUZCSHEpt9ZA5UovMy5wkACZBoQ5ZB94DgiIogBnrwuweYZAZBY3wi7zhNSMa5eZCdj8Sv6Jzdr6CW3zJ4OFpPkWbj1s1uUDRcfasZBepGQDTcqAg8K7ZC3CpdjNS7cZCZCe9pqd177O4ZCTZB6pMxgcxvqHFFP3XFFvYDY1bGZBysNRre9PaSCwkv2pnatvmM0FCIJ5BqZAth64VPOywnUdMpf1Wl1ZCU54WTJS2vkooCrqGMp0nmCX1gsLCydrXJZBuMTA1';
     const { showAlert } = useAlert();
     return (
@@ -80,6 +83,8 @@ export default function Component() {
             validationSchema={FullSchema}
             onSubmit={async (values, { resetForm }) => {
                 try {
+                setLoading(true);
+
                     // === 1. CAMPAIGN ===
                     const cForm = new FormData();
                     cForm.append("name", values.campaign.name);
@@ -200,6 +205,9 @@ export default function Component() {
                 } catch (e) {
                     console.error(e);
                     showAlert("Error", "Failed creating items", "error");
+                } finally {
+                setLoading(false);
+
                 }
             }}
         >
