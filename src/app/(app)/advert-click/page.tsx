@@ -53,6 +53,7 @@ const FullSchema = Yup.object().shape({
         // creative_id: Yup.string().required("Required"),
         status: Yup.string().required("Required"),
         image_file: Yup.mixed().required("Image required"),
+        message: Yup.string().required("Message required"),
     }),
 });
 
@@ -75,7 +76,7 @@ const initialValues = {
         saved_audience_ids: [],
         bid_strategy: "LOWEST_COST_WITHOUT_CAP",
     },
-    ad: { name: "", creative_id: "", status: "ACTIVE", image_file: null, image_hash: "", },
+    ad: { name: "", creative_id: "", status: "ACTIVE", image_file: null, image_hash: "", message: "" },
 };
 
 const steps = [
@@ -193,6 +194,7 @@ export default function Component() {
                             JSON.stringify({
                                 page_id: "822499580957870",
                                 link_data: {
+                                    message: values.ad.message,
                                     image_hash: imageHash,
                                     link: "https://example.com",
                                 },
