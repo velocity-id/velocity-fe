@@ -31,17 +31,21 @@ import { useAlert } from "@/hooks/use-alert";
 import { useLoading } from "@/hooks/use-loading";
 
 const FullSchema = Yup.object().shape({
+    budget_mode: Yup.string().required("Required"),
+    selectedAdAccount: Yup.string().required("Required"),
     campaign: Yup.object().shape({
         name: Yup.string().required("Required"),
         objective: Yup.string().required("Required"),
         status: Yup.string().required("Required"),
         special_ad_categories: Yup.array().of(Yup.string()).min(1, "Required"),
+        bid_strategy: Yup.string().optional(),
     }),
     adset: Yup.object().shape({
         name: Yup.string().required("Required"),
         daily_budget: Yup.number().required("Required").min(100),
         geo_locations: Yup.object().shape({
             countries: Yup.array().of(Yup.string()).min(1, "Required"),
+        bid_strategy: Yup.string().optional(),
         }),
     }),
     ad: Yup.object().shape({
@@ -55,12 +59,21 @@ const FullSchema = Yup.object().shape({
 
 const initialValues = {
     selectedAdAccount: "",
-    campaign: { name: "", objective: "OUTCOME_AWARENESS", status: "PAUSED", special_ad_categories: ["NONE"] },
+    budget_mode: "CBO", // enum: CBO atau ABO
+    campaign: { 
+        name: "", 
+        objective: "OUTCOME_AWARENESS", 
+        status: "PAUSED", 
+        special_ad_categories: ["NONE"],
+        bid_strategy: "LOWEST_COST_WITHOUT_CAP",
+        daily_budget: 1000,
+    },
     adset: {
         name: "",
         daily_budget: 1000,
         geo_locations: { countries: ["US"] },
         saved_audience_ids: [],
+        bid_strategy: "LOWEST_COST_WITHOUT_CAP",
     },
     ad: { name: "", creative_id: "", status: "ACTIVE", image_file: null, image_hash: "", },
 };
@@ -90,9 +103,20 @@ export default function Component() {
                     cForm.append("name", values.campaign.name);
                     cForm.append("objective", values.campaign.objective);
                     cForm.append("status", values.campaign.status);
-                    cForm.append("special_ad_categories", JSON.stringify(values.campaign.special_ad_categories));
-                    cForm.append("is_adset_budget_sharing_enabled", "false");
+                    cForm.append(
+                    "special_ad_categories",
+                    JSON.stringify(values.campaign.special_ad_categories)
+                    );
+
+                    if (values.budget_mode === "CBO") {
+                        // CBO mode: budget & bid_strategy di campaign
+                        cForm.append("bid_strategy", values.campaign.bid_strategy);
+                        cForm.append("daily_budget", String(values.campaign.daily_budget));
+                    } else {
+                        cForm.append("is_adset_budget_sharing_enabled", "false");
+                    }
                     cForm.append("access_token", accessToken);
+
 
                     const cRes = await fetch(
                         `https://graph.facebook.com/v24.0/${values.selectedAdAccount}/campaigns`,
@@ -110,9 +134,16 @@ export default function Component() {
                         const aForm = new FormData();
                         aForm.append("name", values.adset.name + " - " + audienceId);
                         aForm.append("campaign_id", cJson.id);
-                        aForm.append("daily_budget", String(values.adset.daily_budget));
+                        // === BID STRATEGY LOGIC ===
+                        if (values.budget_mode === "ABO") {
+                            // ABO: bid strategy di ad set
+                            aForm.append("bid_strategy", values.adset.bid_strategy);
+                            aForm.append("daily_budget", String(values.adset.daily_budget));
+                        } else {
+                            // CBO: jangan kirim bid_strategy atau budget ke ad set
+                            // Meta akan reject jika dikirim
+                        }
                         aForm.append("billing_event", "IMPRESSIONS");
-                        aForm.append("bid_strategy", "LOWEST_COST_WITHOUT_CAP");
 
                         // gunakan saved audience
                         aForm.append("audience_id", audienceId);

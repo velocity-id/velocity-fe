@@ -111,25 +111,28 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
           <Separator />
 
           {/* === Daily Budget === */}
-          <div>
-            <h2 className="font-semibold mb-2">Daily Budget</h2>
-            <p className="text-sm text-gray-500 mb-2">Enter Daily Budget</p>
+          {formik.values.budget_mode === "ABO" ? (
+            <div>
+              <h2 className="font-semibold mb-2">Daily Budget</h2>
+              <p className="text-sm text-gray-500 mb-2">Enter Daily Budget</p>
 
-            <Input
-              type="number"
-              min={100}
-              name="adset.daily_budget"
-              placeholder="Daily Budget"
-              value={formik.values.adset.daily_budget}
-              onChange={(e) => formik.setFieldValue("adset.daily_budget", Number(e.target.value))}
-              onBlur={formik.handleBlur("adset.daily_budget")}
-              className="w-[200px]"
-            />
+              <Input
+                type="number"
+                min={100}
+                name="adset.daily_budget"
+                placeholder="Daily Budget"
+                value={formik.values.adset.daily_budget}
+                onChange={(e) => formik.setFieldValue("adset.daily_budget", Number(e.target.value))}
+                onBlur={formik.handleBlur("adset.daily_budget")}
+                className="w-[200px]"
+              />
 
-            {formik.touched.adset?.daily_budget && formik.errors.adset?.daily_budget && (
-              <p className="text-xs text-red-500 mt-1">{formik.errors.adset.daily_budget}</p>
-            )}
-          </div>
+              {formik.touched.adset?.daily_budget && formik.errors.adset?.daily_budget && (
+                <p className="text-xs text-red-500 mt-1">{formik.errors.adset.daily_budget}</p>
+              )}
+            </div>
+
+          ) : null}
 
           <Separator />
 

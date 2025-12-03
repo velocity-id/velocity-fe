@@ -15,35 +15,18 @@ import { CampaignObjectiveItem } from "@/features/campaign/type";
 import { CampaignBudgetItem } from "@/features/campaign/type";
 import { BidStrategyItem } from "@/features/campaign/type";
 import { ScheduleIncreaseItem } from "@/features/campaign/type";
-
-
-
-
-// Skema Validasi Yup
-const campaignSchema = Yup.object({
-  adAccount: Yup.string().required("Ad Account is required"),
-  objective: Yup.string().required("Objective is required"),
-  budgetType: Yup.string().required("Budget type is required"),
-  budgetCost: Yup.number()
-    .typeError("Budget must be a number")
-    .positive("Budget must be greater than 0")
-    .required("Budget cost is required"),
-  bidStrategy: Yup.string().required("Bid strategy is required"),
-  schedule: Yup.string().required("Schedule option is required"),
-  campaignName: Yup.string().required("campaign Name is required"),
-});
+import { Switch } from "@/components/ui/switch";
 
 type CreateCampaignProps = {
-  formik: FormikValues; 
+  formik: FormikValues;
 }
 
-
-export default function CreateCampaign({formik}: CreateCampaignProps) {
+export default function CreateCampaign({ formik }: CreateCampaignProps) {
   const [loading, setLoading] = useState(true);
   const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"]);
   const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([]);
   const [objectives, setObjectives] = useState<CampaignObjectiveItem[]>([]);
-  
+
   // //constant untuk objective
   const CampaignObjective: CampaignObjectiveItem[] = [
     { value: "OUTCOME_AWARENESS", label: "Awareness" },
@@ -55,13 +38,13 @@ export default function CreateCampaign({formik}: CreateCampaignProps) {
   ];
 
   //constant untuk budget
-  const CampaignBudget : CampaignBudgetItem[] =  [
+  const CampaignBudget: CampaignBudgetItem[] = [
     { value: "daily_budget", label: "Daily Budget" },
     { value: "lifetime_budget", label: "Lifetime Budget" },
   ];
 
   //constant untuk budget
-  const BidStrategy : BidStrategyItem[] =  [
+  const BidStrategy: BidStrategyItem[] = [
     { value: "LOWEST_COST_WITHOUT_CAP", label: "Highest Volume" },
     { value: "COST_CAP", label: "Cost per result goal" },
     { value: "LOWEST_COST_WITH_BID_CAP", label: "Bid cap" },
@@ -69,8 +52,8 @@ export default function CreateCampaign({formik}: CreateCampaignProps) {
 
   //constant schedule increase
   const ScheduleIncreaseType: ScheduleIncreaseItem[] = [
-  { value: "value", label: "Increase daily budget by value amount (Rp)" },
-  { value: "percentage", label: "Increase daily budget by percentage (%)" }
+    { value: "value", label: "Increase daily budget by value amount (Rp)" },
+    { value: "percentage", label: "Increase daily budget by percentage (%)" }
   ];
 
 
@@ -95,91 +78,139 @@ export default function CreateCampaign({formik}: CreateCampaignProps) {
     setObjectives(CampaignObjective);
   }, []);
 
-  
+
   console.log('formik di create campaign:', formik.values);
   return (
     <div className="w-full">
-        <Card className="shadow-lg border w-full">
-          <CardContent className="space-y-6 p-6">
+      <Card className="shadow-lg border w-full">
+        <CardContent className="space-y-6 p-6">
 
-            {/* Ad Account */}
-            <div>
-              <h2 className="font-semibold mb-2">Ad Account</h2>
-              {loading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Loader2 className="animate-spin w-4 h-4" />
-                  Loading Ad Account...
-                </div>
-              ) : (
-                <Select
-                  value={formik.values.selectedAdAccount}
-                  onValueChange={(val) => formik.setFieldValue("selectedAdAccount", val)}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select Ad Account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {adAccount.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {formik.touched.adAccount && formik.errors.adAccount && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.adAccount}</p>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Objective */}
-            <div>
-              <h2 className="font-semibold mb-2">Objective</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
+          {/* Ad Account */}
+          <div>
+            <h2 className="font-semibold mb-2">Ad Account</h2>
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Loader2 className="animate-spin w-4 h-4" />
+                Loading Ad Account...
+              </div>
+            ) : (
               <Select
-                value={formik.values.campaign.objective}
-                onValueChange={(val) => formik.setFieldValue("campaign.objective", val)}
+                value={formik.values.selectedAdAccount}
+                onValueChange={(val) => formik.setFieldValue("selectedAdAccount", val)}
               >
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Objective" />
+                  <SelectValue placeholder="Select Ad Account" />
                 </SelectTrigger>
                 <SelectContent>
-                  {objectives.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
+                  {adAccount.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            )}
+            {formik.touched.adAccount && formik.errors.adAccount && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.adAccount}</p>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Objective */}
+          <div>
+            <h2 className="font-semibold mb-2">Objective</h2>
+            <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
+            <Select
+              value={formik.values.campaign.objective}
+              onValueChange={(val) => formik.setFieldValue("campaign.objective", val)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select Objective" />
+              </SelectTrigger>
+              <SelectContent>
+                {objectives.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.campaign && formik.errors.campaign && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.objective}</p>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Budget Mode */}
+          <div>
+            <h2 className="font-semibold mb-2">Budget Mode</h2>
+            <p className="text-sm text-gray-500 mb-2">CBO or ABO</p>
+
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={formik.values.budget_mode === "CBO"}
+                onCheckedChange={(checked) =>
+                  formik.setFieldValue("budget_mode", checked ? "CBO" : "ABO")
+                }
+              />
+              <span className="text-sm text-gray-700">
+                {formik.values.budget_mode === "CBO" ? "CBO (Campaign Budget Optimization)" : "ABO (Ad Set Budget Optimization)"}
+              </span>
+            </div>
+
+            {formik.touched.budget_mode && formik.errors.budget_mode && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.budget_mode}</p>
+            )}
+          </div>
+          
+          {/* Budget Cost shown only when CBO */}
+          {formik.values.budget_mode === "CBO" && (
+            <div>
+              <h2 className="font-semibold mb-2">Budget Cost</h2>
+
+              <div className="flex flex-col">
+                <p className="text-sm text-gray-500 mb-2">Daily Budget</p>
+
+                <Input
+                  name="daily_budget"
+                  type="number"
+                  placeholder="Rp"
+                  value={formik.values.campaign.daily_budget ?? ""}
+                  onChange={(e) => formik.setFieldValue("campaign.daily_budget", e.target.value)}
+                  className="w-[160px]"
+                />
+              </div>
+
               {formik.touched.campaign && formik.errors.campaign && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.objective}</p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.daily_budget}</p>
               )}
             </div>
+          )}
 
-            <Separator />
+          <Separator />
 
-            {/* Campaign Name */}
-            <div>
-              <h2 className="font-semibold mb-2">Campaign Name</h2>
-              <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
-                <Input
-                  name="name"
-                  placeholder="Enter Campaign Name"
-                  value={formik.values.campaign.name}
-                  onChange={formik.handleChange("campaign.name")}
-                  onBlur={formik.handleBlur("campaign.name")}
-                  className="w-[300px]"
-                />
-                {formik.touched.campaign && formik.errors.campaign && (
-                  <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.name}</p>
-                )}
-            </div>
+          {/* Campaign Name */}
+          <div>
+            <h2 className="font-semibold mb-2">Campaign Name</h2>
+            <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
+            <Input
+              name="name"
+              placeholder="Enter Campaign Name"
+              value={formik.values.campaign.name}
+              onChange={formik.handleChange("campaign.name")}
+              onBlur={formik.handleBlur("campaign.name")}
+              className="w-[300px]"
+            />
+            {formik.touched.campaign && formik.errors.campaign && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.name}</p>
+            )}
+          </div>
 
-            <Separator />
-          </CardContent>
-        </Card>
+          <Separator />
+        </CardContent>
+      </Card>
     </div>
   );
 }
