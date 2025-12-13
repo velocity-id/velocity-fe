@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { getSavedAudiences } from "@/features/ad-set/api";
+import { getSavedAudiences, SavedAudience } from "@/features/ad-set/api";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +15,7 @@ type CreateAdSetProps = {
 };
 
 export default function CreateAdSet({ formik }: CreateAdSetProps) {
-  const [savedAudiences, setSavedAudiences] = useState([]);
+  const [savedAudiences, setSavedAudiences] = useState<SavedAudience[]>([]);
 
   useEffect(() => {
     async function load() {
