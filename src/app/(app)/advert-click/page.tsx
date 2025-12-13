@@ -1,8 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import { Formik, Form } from "formik";
-import * as Yup from "yup";
+import { CommonHeader } from "@/components/common/common-header";
 import { Button } from "@/components/ui/button";
 import {
     Stepper,
@@ -15,20 +14,22 @@ import {
     StepperTitle,
     StepperTrigger,
 } from "@/components/ui/stepper";
+import { useAlert } from "@/hooks/use-alert";
+import { useLoading } from "@/hooks/use-loading";
+import { Form, Formik } from "formik";
 import {
     Check,
+    Layers,
     LoaderCircleIcon,
     Megaphone,
     Target,
-    Layers,
 } from "lucide-react";
-import { CommonHeader } from "@/components/common/common-header";
-import CreateCampaign from "./_components/create-campaign";
-import CreateAdSet from "./_components/create-ad-set";
-import CreateAd from "./_components/create-ad";
 import { getSession } from "next-auth/react";
-import { useAlert } from "@/hooks/use-alert";
-import { useLoading } from "@/hooks/use-loading";
+import { useState } from "react";
+import * as Yup from "yup";
+import CreateAd from "./_components/create-ad";
+import CreateAdSet from "./_components/create-ad-set";
+import CreateCampaign from "./_components/create-campaign";
 
 const FullSchema = Yup.object().shape({
     budget_mode: Yup.string().required("Required"),
@@ -39,11 +40,11 @@ const FullSchema = Yup.object().shape({
         status: Yup.string().required("Required"),
         special_ad_categories: Yup.array().of(Yup.string()).min(1, "Required"),
         bid_strategy: Yup.string().optional(),
-        daily_budget: Yup.number().optional().min(100000)
+        daily_budget: Yup.number().optional()
     }),
     adset: Yup.object().shape({
         name: Yup.string().required("Required"),
-        daily_budget: Yup.number().required("Required").min(100),
+        daily_budget: Yup.number().optional().min(100000),
         geo_locations: Yup.object().shape({
             countries: Yup.array().of(Yup.string()).min(1, "Required"),
             bid_strategy: Yup.string().optional(),
@@ -57,6 +58,48 @@ const FullSchema = Yup.object().shape({
         message: Yup.string().required("Message required"),
     }),
 });
+
+const stepSchemas = {
+    1: Yup.object({
+        budget_mode: FullSchema.fields.budget_mode,
+        selectedAdAccount: FullSchema.fields.selectedAdAccount,
+        campaign: FullSchema.fields.campaign,
+    }),
+
+    2: Yup.object({
+        adset: FullSchema.fields.adset,
+    }),
+
+    3: Yup.object({
+        ad: FullSchema.fields.ad,
+    }),
+} as const satisfies Record<number, any>;
+
+const validateStep = async (
+    step: number,
+    values: unknown,
+    setTouched: any
+) => {
+    try {
+        await stepSchemas[step as keyof typeof stepSchemas].validate(values, {
+            abortEarly: false,
+        });
+        return true;
+    } catch (err: any) {
+        const touchedFields: any = {};
+
+        err.inner.forEach((e: any) => {
+            if (e.path) {
+                touchedFields[e.path] = true;
+            }
+        });
+
+        setTouched(touchedFields, true);
+        return false;
+    }
+};
+
+
 
 export type InitialFormType = {
     selectedAdAccount: string;
@@ -287,7 +330,7 @@ export default function Component() {
                 }
             }}
         >
-            {({ values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset, handleSubmit }) => (
+            {({ values, errors, touched, handleChange, setFieldValue, handleBlur, handleReset, handleSubmit, validateForm, setTouched }) => (
                 <Form>
                     <CommonHeader title="Advert Click" subtitle="Kelola Campaign, Ad Set, Ad." />
                     <div className="h-10"></div>
@@ -346,14 +389,51 @@ export default function Component() {
                                 <div></div>
                             )}
 
-                            <Button
-                                type={currentStep === 3 ? "submit" : "button"}
-                                onClick={() => {
-                                    if (currentStep < 3) setCurrentStep((prev) => prev + 1);
-                                }}
-                            >
-                                {currentStep > 2 ? "Save" : "Next"}
-                            </Button>
+                            <div className="flex items-center justify-between gap-2.5">
+                                {currentStep > 1 ? (
+                                    <Button
+                                        variant="outline"
+                                        type="button"
+                                        onClick={() => setCurrentStep((prev) => prev - 1)}
+                                    >
+                                        Previous
+                                    </Button>
+                                ) : (
+                                    <div />
+                                )}
+
+                                {currentStep < 3 ? (
+                                    <Button
+                                        type="button"
+                                        onClick={async () => {
+                                            const isValid = await validateStep(
+                                                currentStep,
+                                                values,
+                                                setTouched
+                                            );
+
+                                            if (!isValid) {
+                                                showAlert(
+                                                    "Gagal",
+                                                    "Lengkapi semua field di step ini",
+                                                    "error"
+                                                );
+                                                return;
+                                            }
+
+                                            setCurrentStep((prev) => prev + 1);
+                                        }}
+                                    >
+                                        Next
+                                    </Button>
+
+                                ) : (
+                                    <Button type="submit">
+                                        Save
+                                    </Button>
+                                )}
+                            </div>
+
                         </div>
                     </Stepper>
                 </Form>
