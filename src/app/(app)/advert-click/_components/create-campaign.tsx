@@ -1,21 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { FormikValues } from "formik";
-import * as Yup from "yup";
+import { useEffect, useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Plus } from "lucide-react";
-import { getAdAccounts } from "@/features/campaign/api";
-import { CampaignAdAccount } from "@/features/campaign/type";
-import { CampaignObjectiveItem } from "@/features/campaign/type";
-import { CampaignBudgetItem } from "@/features/campaign/type";
-import { BidStrategyItem } from "@/features/campaign/type";
-import { ScheduleIncreaseItem } from "@/features/campaign/type";
 import { Switch } from "@/components/ui/switch";
+import { getAdAccounts } from "@/features/campaign/api";
+import { CampaignAdAccount, CampaignObjectiveItem } from "@/features/campaign/type";
+import { Loader2 } from "lucide-react";
 
 type CreateCampaignProps = {
   formik: FormikValues;
@@ -23,7 +18,6 @@ type CreateCampaignProps = {
 
 export default function CreateCampaign({ formik }: CreateCampaignProps) {
   const [loading, setLoading] = useState(true);
-  const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"]);
   const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([]);
   const [objectives, setObjectives] = useState<CampaignObjectiveItem[]>([]);
 
@@ -35,25 +29,6 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
     { value: "OUTCOME_LEADS", label: "Leads" },
     { value: "OUTCOME_APP_PROMOTION", label: "App Promotion" },
     { value: "OUTCOME_SALES", label: "Sales" },
-  ];
-
-  //constant untuk budget
-  const CampaignBudget: CampaignBudgetItem[] = [
-    { value: "daily_budget", label: "Daily Budget" },
-    { value: "lifetime_budget", label: "Lifetime Budget" },
-  ];
-
-  //constant untuk budget
-  const BidStrategy: BidStrategyItem[] = [
-    { value: "LOWEST_COST_WITHOUT_CAP", label: "Highest Volume" },
-    { value: "COST_CAP", label: "Cost per result goal" },
-    { value: "LOWEST_COST_WITH_BID_CAP", label: "Bid cap" },
-  ];
-
-  //constant schedule increase
-  const ScheduleIncreaseType: ScheduleIncreaseItem[] = [
-    { value: "value", label: "Increase daily budget by value amount (Rp)" },
-    { value: "percentage", label: "Increase daily budget by percentage (%)" }
   ];
 
 
