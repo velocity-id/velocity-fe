@@ -119,14 +119,19 @@ const steps = [
 export default function Component() {
     const [currentStep, setCurrentStep] = useState(1);
     const { setLoading } = useLoading();
-
-    const accessToken = 'EAAPZB0wXT18ABP0T3ikLlNiOeUBfnrQRamhYVfUZCSHEpt9ZA5UovMy5wkACZBoQ5ZB94DgiIogBnrwuweYZAZBY3wi7zhNSMa5eZCdj8Sv6Jzdr6CW3zJ4OFpPkWbj1s1uUDRcfasZBepGQDTcqAg8K7ZC3CpdjNS7cZCZCe9pqd177O4ZCTZB6pMxgcxvqHFFP3XFFvYDY1bGZBysNRre9PaSCwkv2pnatvmM0FCIJ5BqZAth64VPOywnUdMpf1Wl1ZCU54WTJS2vkooCrqGMp0nmCX1gsLCydrXJZBuMTA1';
     const { showAlert } = useAlert();
     return (
         <Formik
             initialValues={initialValues}
             validationSchema={FullSchema}
             onSubmit={async (values, { resetForm }) => {
+                const session = await getSession();
+                const accessToken = session?.accessToken;
+
+                if (!accessToken) {
+                    showAlert("Error", "No access token found", "error");
+                    return;
+                }
                 try {
                     setLoading(true);
 

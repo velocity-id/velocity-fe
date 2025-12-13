@@ -7,10 +7,11 @@ export type SavedAudience = {
 
 
 export async function getCustomAudiences(adAccountId: string) {
-  const accessToken = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN;
+  const session = await getSession();
+  const accessToken = session?.accessToken;
 
-  if (!accessToken) {
-    throw new Error("Missing NEXT_PUBLIC_FB_ACCESS_TOKEN");
+  if (!session?.accessToken) {
+    throw new Error("No Facebook access token in session");
   }
 
   const url = `https://graph.facebook.com/v23.0/act_${adAccountId}/customaudiences?fields=id,name,approximate_count&access_token=${accessToken}`;
@@ -30,10 +31,11 @@ export async function getCustomAudiences(adAccountId: string) {
 }
 
 export async function getLocations(query: string) {
-  const accessToken = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN;
+  const session = await getSession();
+  const accessToken = session?.accessToken;
 
-  if (!accessToken) {
-    throw new Error("Missing NEXT_PUBLIC_FB_ACCESS_TOKEN");
+  if (!session?.accessToken) {
+    throw new Error("No Facebook access token in session");
   }
 
   const url = `https://graph.facebook.com/v23.0/search?type=adgeolocation&location_types=["city","region","country"]&q=${encodeURIComponent(

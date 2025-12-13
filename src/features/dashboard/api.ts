@@ -1,22 +1,22 @@
+import { getServerSession } from "next-auth";
 import { Campaign } from "./type";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const GRAPH_URL = "https://graph.facebook.com/v23.0";
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN!;
-const AD_ACCOUNT_ID = process.env.NEXT_PUBLIC_AD_ACCOUNT_ID!;
 
 
-export async function fetchCampaigns(): Promise<Campaign[]> {
-  if (!ACCESS_TOKEN || !AD_ACCOUNT_ID) {
-    throw new Error(
-      "Missing environment variables: NEXT_PUBLIC_FB_ACCESS_TOKEN or NEXT_PUBLIC_AD_ACCOUNT_ID"
-    );
-  }
+export async function fetchCampaigns(adAcountId: string): Promise<Campaign[]> {
+    const session = await getServerSession(authOptions);
+    const accessToken = session?.accessToken
+    if (!accessToken) {
+      throw new Error("Unauthorized");
+    }
 
-  const url = new URL(`${GRAPH_URL}/act_${AD_ACCOUNT_ID}/campaigns`);
+  const url = new URL(`${GRAPH_URL}/act_${adAcountId}/campaigns`);
   url.search = new URLSearchParams({
     fields: "id,name,objective,status,created_time",
     limit: "100",
-    access_token: ACCESS_TOKEN,
+    access_token: accessToken,
   }).toString();
 
   const res = await fetch(url.toString());

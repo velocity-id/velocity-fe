@@ -49,7 +49,7 @@ export default function DashboardPage() {
       setLoading(true);
 
       const [campaignRes] = await Promise.all([
-        fetchCampaigns(),
+        fetchCampaigns('1382299553408417'),
       ]);
 
       setCampaigns(campaignRes);
@@ -63,8 +63,6 @@ export default function DashboardPage() {
   const totalCampaigns = campaigns.length;
   const totalClicks = 0;
   const totalImpressions = 0;
-
-  // === Hitung perubahan persentase ===
 
   const prevCampaigns = totalCampaigns - 1;
   const campaignChange = prevCampaigns > 0 ? ((totalCampaigns - prevCampaigns) / prevCampaigns) * 100 : 0;
