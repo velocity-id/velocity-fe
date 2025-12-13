@@ -39,6 +39,7 @@ const FullSchema = Yup.object().shape({
         status: Yup.string().required("Required"),
         special_ad_categories: Yup.array().of(Yup.string()).min(1, "Required"),
         bid_strategy: Yup.string().optional(),
+        daily_budget: Yup.number().optional().min(100000)
     }),
     adset: Yup.object().shape({
         name: Yup.string().required("Required"),
