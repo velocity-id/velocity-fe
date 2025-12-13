@@ -34,6 +34,7 @@ import CreateCampaign from "./_components/create-campaign";
 const FullSchema = Yup.object().shape({
     budget_mode: Yup.string().required("Required"),
     selectedAdAccount: Yup.string().required("Required"),
+    selectedPageId: Yup.string().required("Required"),
     campaign: Yup.object().shape({
         name: Yup.string().required("Required"),
         objective: Yup.string().required("Required"),
@@ -44,7 +45,7 @@ const FullSchema = Yup.object().shape({
     }),
     adset: Yup.object().shape({
         name: Yup.string().required("Required"),
-        daily_budget: Yup.number().optional().min(100000),
+        daily_budget: Yup.number().optional(),
         geo_locations: Yup.object().shape({
             countries: Yup.array().of(Yup.string()).min(1, "Required"),
             bid_strategy: Yup.string().optional(),
@@ -72,6 +73,7 @@ const stepSchemas = {
 
     3: Yup.object({
         ad: FullSchema.fields.ad,
+        selectedPageId: FullSchema.fields.selectedPageId,
     }),
 } as const satisfies Record<number, any>;
 
@@ -103,6 +105,7 @@ const validateStep = async (
 
 export type InitialFormType = {
     selectedAdAccount: string;
+    selectedPageId: string;
     budget_mode: string;
     campaign: {
         name: string;
@@ -135,6 +138,7 @@ export type InitialFormType = {
 
 const initialValues: InitialFormType = {
     selectedAdAccount: "",
+    selectedPageId: "",
     budget_mode: "CBO", // enum: CBO atau ABO
     campaign: {
         name: "",
@@ -278,7 +282,7 @@ export default function Component() {
                         creativeForm.append(
                             "object_story_spec",
                             JSON.stringify({
-                                page_id: "822499580957870",
+                                page_id: values.selectedPageId,
                                 link_data: {
                                     message: values.ad.message,
                                     image_hash: imageHash,

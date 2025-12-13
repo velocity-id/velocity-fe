@@ -11,11 +11,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useAlert } from "@/hooks/use-alert";
+import { useLoading } from "@/hooks/use-loading";
+import { getListPage } from "@/features/ad/api";
+import { FacebookPage } from "@/features/ad/type";
 
 
 type CreateAdProps = {
@@ -23,14 +26,32 @@ type CreateAdProps = {
 };
 
 export default function CreateAd({ formik }: CreateAdProps) {
+      const { setLoading } = useLoading();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [loadingGen, setLoadingGen] = useState(false);
   const [copyClicks, setCopyClicks] = useState<string[]>([]);
   const [selectedPromo, setSelectedPromo] = useState<string>("");
+    const [listPage, setListPage] = useState<FacebookPage[]>([]);
+  
   const { showAlert } = useAlert();
 
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          const [resAdAccount] = await Promise.all([getListPage()]);
+          setListPage(resAdAccount);
+        } catch (err) {
+          console.error("Failed to fetch ad accounts:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }, []);
+  
 
   const generateCopyClicks = async () => {
     if (!keyword.trim()) return;
@@ -76,6 +97,29 @@ export default function CreateAd({ formik }: CreateAdProps) {
     <div className="w-full">
       <Card className="shadow-lg border w-full">
         <CardContent className="space-y-6 p-6">
+
+          {/* Facebook page */}
+          <div>
+            <h2 className="font-semibold mb-2">Ad Account</h2>
+              <Select
+                value={formik.values.selectedPageId}
+                onValueChange={(val) => formik.setFieldValue("selectedPageId", val)}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Ad Account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {listPage.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            {formik.touched.adAccount && formik.errors.adAccount && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.adAccount}</p>
+            )}
+          </div>
 
           {/* === Ad Media Upload === */}
           <Card className="shadow-md border w-full">
