@@ -15,6 +15,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useAlert } from "@/hooks/use-alert";
 
 
 type CreateAdProps = {
@@ -23,62 +24,48 @@ type CreateAdProps = {
 
 export default function CreateAd({ formik }: CreateAdProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(URL.createObjectURL(file));
-    }
-  };
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [loadingGen, setLoadingGen] = useState(false);
-  const [promos, setPromos] = useState<string[]>([]);
+  const [copyClicks, setCopyClicks] = useState<string[]>([]);
   const [selectedPromo, setSelectedPromo] = useState<string>("");
+      const { showAlert } = useAlert();
 
 
-  const generatePromos = async () => {
+  const generateCopyClicks = async () => {
     if (!keyword.trim()) return;
 
     try {
       setLoadingGen(true);
 
-      const res = await fetch(
-        "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=AIzaSyC7O79XaZbVRJKp0ARwvpDL5r6bVLiqGnQ",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `Buatkan 3 kalimat promosi tentang ${keyword} dalam format nomor langsung dan tidak usah ada intro penjelasan darimu, juga tidak usah ada gaya tulisan bold atau italic dan lain lain`
-                  }
-                ]
-              }
-            ]
-          }),
-        }
-      );
+      const res = await fetch("/api/copyclicks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword }),
+      });
+
 
       const data = await res.json();
+      if (data.error) {
+        showAlert("Problem", "Permintaan ditolak karena kuota habis atau billing Gemini belum aktif. Silakan periksa pengaturan API Anda.", "error");
+      }
+        // raw text dari gemini
+        const rawText: string =
+          data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-      // raw text dari gemini
-      const rawText: string =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+        // proses → list copyclicks
+        const cleaned = rawText
+          .trim()
+          .split("\n")
+          .filter((line) => line.trim() !== "")
+          .map((line) => line.replace(/^\d+\.\s*/, ""));
 
-      // proses → list promos
-      const cleaned = rawText
-        .trim()
-        .split("\n")
-        .filter((line) => line.trim() !== "")
-        .map((line) => line.replace(/^\d+\.\s*/, ""));
+        setCopyClicks(cleaned);
+      } catch (error) {
+        console.error("Error processing Gemini response:", error);
 
-      // simpan di state, tampilkan sebagai list
-      setPromos(cleaned);
-    } catch (err) {
-      console.error(err);
-    } finally {
+      }
+finally {
       setLoadingGen(false);
     }
   };
@@ -180,17 +167,17 @@ export default function CreateAd({ formik }: CreateAdProps) {
                   <Button
                     className="mt-4"
                     disabled={loadingGen}
-                    onClick={generatePromos}
+                    onClick={generateCopyClicks}
                   >
                     {loadingGen ? "Generating..." : "Generate"}
                   </Button>
 
                   {/* List hasil promo */}
-                  {promos.length > 0 && (
+                  {copyClicks.length > 0 && (
                     <div className="mt-5 space-y-3">
                       <Label>Pilih Salah Satu</Label>
 
-                      {promos.map((text, idx) => (
+                      {copyClicks.map((text, idx) => (
                         <div
                           key={idx}
                           className={`p-3 border rounded cursor-pointer ${selectedPromo === text ? "bg-gray-100" : ""
