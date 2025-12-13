@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-let campaigns = [
+const campaigns = [
   {
     id: "1",
     name: "Summer Sale 2025",

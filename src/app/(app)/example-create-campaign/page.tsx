@@ -12,7 +12,7 @@ import { createCampaign } from "@/features/campaign/api"
 import { useLoading } from "@/hooks/use-loading"
 import { useAlert } from "@/hooks/use-alert"
 
-import { Formik, Form, FieldArray, FormikErrors, ErrorMessage } from "formik"
+import { Formik, Form, FieldArray, ErrorMessage } from "formik"
 import * as Yup from "yup"
 
 const CampaignSchema = Yup.object().shape({
