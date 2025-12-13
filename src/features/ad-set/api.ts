@@ -29,7 +29,6 @@ export async function getCustomAudiences(adAccountId: string) {
   return data.data || [];
 }
 
-// Fungsi untuk ambil Location Suggestions (Targeting)
 export async function getLocations(query: string) {
   const accessToken = process.env.NEXT_PUBLIC_FB_ACCESS_TOKEN;
 

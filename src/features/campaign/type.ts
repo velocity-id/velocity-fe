@@ -82,12 +82,3 @@ export interface Campaign {
   objective: string;
   effective_status: string;
 }
-// export type CreateCampaignParams = {
-//   adAccountId: string;
-//   accessToken: string;
-//   name: string;
-//   objective: CampaignObjective;
-//   budgetType: CampaignBudgetType;
-//   budgetCost: number;
-//   bidStrategy: BidStrategy;
-// };
