@@ -231,7 +231,10 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
                 variant="ghost"
                 size="sm"
                 className="text-gray-500"
-                onClick={() => setCampaignParts([])}
+                onClick={() => {
+                  setCampaignParts([])
+                formik.setFieldValue("campaign.name", '');
+                }}
               >
                 Clear
               </Button>
