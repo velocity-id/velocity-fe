@@ -55,6 +55,12 @@ const items: SidebarItem[] = [
     icon: User,
     url: "/profile",
   },
+  // {
+  //   key: "forecasting",
+  //   title: "Forecasting",
+  //   icon: Layers,
+  //   url: "/forecasting",
+  // },
 ];
 
 export function AppSidebar() {
