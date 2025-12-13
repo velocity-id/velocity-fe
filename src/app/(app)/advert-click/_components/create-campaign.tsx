@@ -12,13 +12,14 @@ import { getAdAccounts } from "@/features/campaign/api";
 import { CampaignAdAccount, CampaignObjectiveItem } from "@/features/campaign/type";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLoading } from "@/hooks/use-loading";
 
 type CreateCampaignProps = {
   formik: FormikValues;
 }
 
 export default function CreateCampaign({ formik }: CreateCampaignProps) {
-  const [loading, setLoading] = useState(true);
+  const { setLoading } = useLoading();
   const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([]);
   const [objectives, setObjectives] = useState<CampaignObjectiveItem[]>([]);
 
@@ -97,12 +98,6 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
           {/* Ad Account */}
           <div>
             <h2 className="font-semibold mb-2">Ad Account</h2>
-            {loading ? (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Loader2 className="animate-spin w-4 h-4" />
-                Loading Ad Account...
-              </div>
-            ) : (
               <Select
                 value={formik.values.selectedAdAccount}
                 onValueChange={(val) => formik.setFieldValue("selectedAdAccount", val)}
@@ -118,7 +113,6 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
                   ))}
                 </SelectContent>
               </Select>
-            )}
             {formik.touched.adAccount && formik.errors.adAccount && (
               <p className="text-xs text-red-500 mt-1">{formik.errors.adAccount}</p>
             )}

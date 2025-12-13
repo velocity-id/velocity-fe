@@ -128,7 +128,7 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
 
               <Input
                 type="number"
-                min={100}
+                min={100000}
                 name="adset.daily_budget"
                 placeholder="Daily Budget"
                 value={formik.values.adset.daily_budget}
