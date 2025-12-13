@@ -45,7 +45,7 @@ const FullSchema = Yup.object().shape({
         daily_budget: Yup.number().required("Required").min(100),
         geo_locations: Yup.object().shape({
             countries: Yup.array().of(Yup.string()).min(1, "Required"),
-        bid_strategy: Yup.string().optional(),
+            bid_strategy: Yup.string().optional(),
         }),
     }),
     ad: Yup.object().shape({
@@ -57,14 +57,45 @@ const FullSchema = Yup.object().shape({
     }),
 });
 
+export type InitialFormType = {
+    selectedAdAccount: string;
+    budget_mode: string;
+    campaign: {
+        name: string;
+        objective: string;
+        status: string;
+        special_ad_categories: string[];
+        bid_strategy: string;
+        daily_budget: number;
+    };
+    adset: {
+        name: string;
+        daily_budget: number;
+        geo_locations: {
+            countries: string[];
+        };
+        saved_audience_ids: string[];
+        bid_strategy: string;
+    };
+    ad: {
+        name: string;
+        creative_id: string;
+        status: string;
+        image_file: File | null;
+        image_hash: string;
+        message: string;
+    };
+};
 
-const initialValues = {
+
+
+const initialValues: InitialFormType = {
     selectedAdAccount: "",
     budget_mode: "CBO", // enum: CBO atau ABO
-    campaign: { 
-        name: "", 
-        objective: "OUTCOME_AWARENESS", 
-        status: "PAUSED", 
+    campaign: {
+        name: "",
+        objective: "OUTCOME_AWARENESS",
+        status: "PAUSED",
         special_ad_categories: ["NONE"],
         bid_strategy: "LOWEST_COST_WITHOUT_CAP",
         daily_budget: 1000,
@@ -97,7 +128,7 @@ export default function Component() {
             validationSchema={FullSchema}
             onSubmit={async (values, { resetForm }) => {
                 try {
-                setLoading(true);
+                    setLoading(true);
 
                     // === 1. CAMPAIGN ===
                     const cForm = new FormData();
@@ -105,8 +136,8 @@ export default function Component() {
                     cForm.append("objective", values.campaign.objective);
                     cForm.append("status", values.campaign.status);
                     cForm.append(
-                    "special_ad_categories",
-                    JSON.stringify(values.campaign.special_ad_categories)
+                        "special_ad_categories",
+                        JSON.stringify(values.campaign.special_ad_categories)
                     );
 
                     if (values.budget_mode === "CBO") {
@@ -170,7 +201,10 @@ export default function Component() {
                         // 3. UPLOAD IMAGE (PER ADSET)
                         // ----------------------------------------
                         const imgForm = new FormData();
-                        imgForm.append("filename", values.ad.image_file);
+                        if (values.ad.image_file) {
+                            imgForm.append("filename", values.ad.image_file);
+                        }
+
                         imgForm.append("access_token", accessToken);
 
                         const imgRes = await fetch(
@@ -179,8 +213,11 @@ export default function Component() {
                         );
 
                         const imgJson = await imgRes.json();
-                        const imageHash =
-                            imgJson?.images?.[values.ad.image_file.name]?.hash;
+                        let imageHash: string | undefined;
+                        if (values.ad.image_file) {
+                            imageHash =
+                                imgJson?.images?.[values.ad.image_file.name]?.hash;
+                        }
 
                         if (!imageHash) throw new Error("Image upload failed");
 
@@ -239,7 +276,7 @@ export default function Component() {
                     console.error(e);
                     showAlert("Error", "Failed creating items", "error");
                 } finally {
-                setLoading(false);
+                    setLoading(false);
 
                 }
             }}

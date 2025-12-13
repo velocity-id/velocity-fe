@@ -64,7 +64,7 @@ export default function CreateAd({ formik }: CreateAdProps) {
       const data = await res.json();
 
       // raw text dari gemini
-      const rawText =
+      const rawText: string =
         data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
       // proses → list promos
