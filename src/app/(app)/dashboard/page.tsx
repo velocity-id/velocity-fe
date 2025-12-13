@@ -33,16 +33,14 @@ import {
   CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchCampaigns, fetchInsights } from "@/features/dashboard/api";
+import { fetchCampaigns } from "@/features/dashboard/api";
 import { Campaign } from "@/features/dashboard/type";
 
-type ViewType = "Ad" | "Ad Set" | "Campaign";
 
 export default function DashboardPage() {
-  const [view, setView] = React.useState<ViewType>("Campaign");
   const [range, setRange] = React.useState<"7d" | "30d">("7d");
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
-  const [chartData, setChartData] = React.useState<any[]>([]);
+  const [chartData, setChartData] = React.useState<[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [totalSpend, setTotalSpend] = React.useState(0);
 
@@ -50,19 +48,11 @@ export default function DashboardPage() {
     const load = async () => {
       setLoading(true);
 
-      const [campaignRes, insightsRes] = await Promise.all([
+      const [campaignRes] = await Promise.all([
         fetchCampaigns(),
-        fetchInsights(range),
       ]);
 
       setCampaigns(campaignRes);
-      setChartData(insightsRes);
-
-      const total = insightsRes.reduce((sum: number, item: any) => {
-        return sum + Number(item.spend || 0);
-      }, 0);
-
-      setTotalSpend(total);
       setLoading(false);
     };
 
@@ -71,21 +61,10 @@ export default function DashboardPage() {
 
   // === Statistik ===
   const totalCampaigns = campaigns.length;
-  const totalClicks = chartData.reduce((sum, d) => sum + (d.clicks || 0), 0);
-  const totalImpressions = chartData.reduce(
-    (sum, d) => sum + (d.impressions || 0),
-    0
-  );
+  const totalClicks = 0;
+  const totalImpressions = 0;
 
   // === Hitung perubahan persentase ===
-  const prevSpend = chartData[chartData.length - 2]?.spend || 0;
-  const spendChange = prevSpend > 0 ? ((totalSpend - prevSpend) / prevSpend) * 100 : 0;
-
-  const prevClicks = chartData[chartData.length - 2]?.clicks || 0;
-  const clicksChange = prevClicks > 0 ? ((totalClicks - prevClicks) / prevClicks) * 100 : 0;
-
-  const prevImpressions = chartData[chartData.length - 2]?.impressions || 0;
-  const impressionsChange = prevImpressions > 0 ? ((totalImpressions - prevImpressions) / prevImpressions) * 100 : 0;
 
   const prevCampaigns = totalCampaigns - 1;
   const campaignChange = prevCampaigns > 0 ? ((totalCampaigns - prevCampaigns) / prevCampaigns) * 100 : 0;
@@ -100,22 +79,22 @@ export default function DashboardPage() {
     },
     {
       title: "Total Spend (Rp)",
-      value: loading ? "-" : `Rp${totalSpend.toLocaleString("id-ID")}`,
-      change: spendChange.toFixed(1),
+      value: '0',
+      change: '0',
       icon: <CreditCard className="w-6 h-6 text-green-500" />,
       bg: "bg-green-100",
     },
     {
       title: "Total Clicks",
       value: loading ? "-" : totalClicks,
-      change: clicksChange.toFixed(1),
+      change: '0',
       icon: <Megaphone className="w-6 h-6 text-purple-500" />,
       bg: "bg-purple-100",
     },
     {
       title: "Total Impressions",
       value: loading ? "-" : totalImpressions,
-      change: impressionsChange.toFixed(1),
+      change: '0',
       icon: <Layers className="w-6 h-6 text-orange-500" />,
       bg: "bg-orange-100",
     },
@@ -235,10 +214,7 @@ export default function DashboardPage() {
         {/* === Recent Campaigns === */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Campaigns</CardTitle>
-            <p className="text-sm text-gray-500">
-              Data diambil langsung dari Meta Ads API
-            </p>
+            <CardTitle>Campaign Terbaru</CardTitle>
           </CardHeader>
           <CardContent>
             <table className="w-full text-sm">
@@ -246,7 +222,6 @@ export default function DashboardPage() {
                 <tr>
                   <th className="py-2">Campaign Name</th>
                   <th>Objective</th>
-                  <th>Budget</th>
                   <th>Status</th>
                   <th>Created</th>
                 </tr>
@@ -264,7 +239,6 @@ export default function DashboardPage() {
                     <tr key={i} className="border-t">
                       <td className="py-2">{c.name}</td>
                       <td>{c.objective}</td>
-                      <td>{c.budget}</td>
                       <td>
                         <Badge
                           variant={
@@ -278,7 +252,7 @@ export default function DashboardPage() {
                           {c.status}
                         </Badge>
                       </td>
-                      <td>{c.date}</td>
+                      <td>{c.created_time}</td>
                     </tr>
                   ))
                 )}
