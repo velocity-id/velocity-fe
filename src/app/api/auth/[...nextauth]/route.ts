@@ -24,7 +24,7 @@ export const authOptions: AuthOptions = {
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
 
       authorization: {
-        url: "https://www.facebook.com/v23.0/dialog/oauth",
+        url: "https://www.facebook.com/v24.0/dialog/oauth",
         params: {
           config_id: process.env.FACEBOOK_CONFIG_ID!,
           response_type: "code",
@@ -33,7 +33,7 @@ export const authOptions: AuthOptions = {
       },
 
       client: {
-        token_endpoint: "https://graph.facebook.com/v23.0/oauth/access_token",
+        token_endpoint: "https://graph.facebook.com/v24.0/oauth/access_token",
         token_endpoint_auth_method: "client_secret_post",
       },
     }),
