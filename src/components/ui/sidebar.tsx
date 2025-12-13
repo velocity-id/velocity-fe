@@ -296,14 +296,6 @@ function SidebarTrigger({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Settings */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/settings")}
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
 
           {/* Notification */}
           <DropdownMenu>
