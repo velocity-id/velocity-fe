@@ -17,6 +17,9 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
+  pages: {
+    signIn: "/login",
+  },
 
   providers: [
     FacebookProvider({
