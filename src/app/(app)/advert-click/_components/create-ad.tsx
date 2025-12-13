@@ -29,7 +29,7 @@ export default function CreateAd({ formik }: CreateAdProps) {
   const [loadingGen, setLoadingGen] = useState(false);
   const [copyClicks, setCopyClicks] = useState<string[]>([]);
   const [selectedPromo, setSelectedPromo] = useState<string>("");
-      const { showAlert } = useAlert();
+  const { showAlert } = useAlert();
 
 
   const generateCopyClicks = async () => {
@@ -49,23 +49,23 @@ export default function CreateAd({ formik }: CreateAdProps) {
       if (data.error) {
         showAlert("Problem", "Permintaan ditolak karena kuota habis atau billing Gemini belum aktif. Silakan periksa pengaturan API Anda.", "error");
       }
-        // raw text dari gemini
-        const rawText: string =
-          data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      // raw text dari gemini
+      const rawText: string =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-        // proses → list copyclicks
-        const cleaned = rawText
-          .trim()
-          .split("\n")
-          .filter((line) => line.trim() !== "")
-          .map((line) => line.replace(/^\d+\.\s*/, ""));
+      // proses → list copyclicks
+      const cleaned = rawText
+        .trim()
+        .split("\n")
+        .filter((line) => line.trim() !== "")
+        .map((line) => line.replace(/^\d+\.\s*/, ""));
 
-        setCopyClicks(cleaned);
-      } catch (error) {
-        console.error("Error processing Gemini response:", error);
+      setCopyClicks(cleaned);
+    } catch (error) {
+      console.error("Error processing Gemini response:", error);
 
-      }
-finally {
+    }
+    finally {
       setLoadingGen(false);
     }
   };
@@ -214,30 +214,7 @@ finally {
             )}
           </div>
 
-
-          {/* === Ad Name === */}
-          <div>
-            <h2 className="font-semibold mb-2">Ad Name</h2>
-            <p className="text-sm text-gray-500 mb-2">Enter Ad Name</p>
-
-            <Input
-              name="ad.name"
-              placeholder="Enter Ad Name"
-              value={formik.values.ad.name}
-              onChange={(e) => formik.setFieldValue("ad.name", e.target.value)}
-              onBlur={formik.handleBlur("ad.name")}
-              className="w-[300px]"
-            />
-
-            {formik.touched.ad?.name && formik.errors.ad?.name && (
-              <p className="text-xs text-red-500 mt-1">
-                {formik.errors.ad.name}
-              </p>
-            )}
-          </div>
-
           <Separator />
-
 
           {/* === Status === */}
           <div>
@@ -266,6 +243,26 @@ finally {
           </div>
 
           <Separator />
+          {/* === Ad Name === */}
+          <div>
+            <h2 className="font-semibold mb-2">Ad Name</h2>
+            <p className="text-sm text-gray-500 mb-2">Enter Ad Name</p>
+
+            <Input
+              name="ad.name"
+              placeholder="Enter Ad Name"
+              value={formik.values.ad.name}
+              onChange={(e) => formik.setFieldValue("ad.name", e.target.value)}
+              onBlur={formik.handleBlur("ad.name")}
+              className="w-[300px]"
+            />
+
+            {formik.touched.ad?.name && formik.errors.ad?.name && (
+              <p className="text-xs text-red-500 mt-1">
+                {formik.errors.ad.name}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

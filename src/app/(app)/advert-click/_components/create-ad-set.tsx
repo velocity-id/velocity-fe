@@ -17,6 +17,37 @@ type CreateAdSetProps = {
 export default function CreateAdSet({ formik }: CreateAdSetProps) {
   const [savedAudiences, setSavedAudiences] = useState<SavedAudience[]>([]);
 
+  // ad set name -- start
+  const [adsetParts, setAdsetParts] = useState<string[]>([]);
+  const addPart = (p: string) =>
+    setAdsetParts((x) => (x.includes(p) ? x : [...x, p]));
+
+  const previewName = adsetParts
+    .map((p) => {
+      if (p === "Location")
+        return formik.values.adset.geo_locations.countries[0];
+
+      if (p === "Audience")
+        return formik.values.adset.saved_audience_ids
+          .map((id: string) => savedAudiences.find((s) => s.id === id)?.name)
+          .filter(Boolean)
+          .join(",");
+
+      return "";
+    })
+    .filter(Boolean)
+    .join(" | ");
+
+  useEffect(() => {
+    if (previewName) {
+      formik.setFieldValue("adset.name", previewName);
+    }
+  }, [previewName]);
+  // ad set name -- end
+
+
+
+
   useEffect(() => {
     async function load() {
       try {
@@ -37,27 +68,6 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
     <div className="w-full">
       <Card className="shadow-lg border w-full">
         <CardContent className="space-y-6 p-6">
-
-          {/* === Ad Set Name === */}
-          <div>
-            <h2 className="font-semibold mb-2">Ad Set Name</h2>
-            <p className="text-sm text-gray-500 mb-2">Set Ad Set Name</p>
-
-            <Input
-              name="adset.name"
-              placeholder="Enter Ad Set Name"
-              value={formik.values.adset.name}
-              onChange={(e) => formik.setFieldValue("adset.name", e.target.value)}
-              onBlur={formik.handleBlur("adset.name")}
-              className="w-[300px]"
-            />
-
-            {formik.touched.adset?.name && formik.errors.adset?.name && (
-              <p className="text-xs text-red-500 mt-1">{formik.errors.adset.name}</p>
-            )}
-          </div>
-
-          <Separator />
           <div>
             <h2 className="font-semibold mb-2">Saved Audience</h2>
             <p className="text-sm text-gray-500 mb-2">
@@ -170,6 +180,58 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
           </div>
 
           <Separator />
+
+          {/* Name Ad Set */}
+          <div>
+            <h2 className="font-semibold mb-2">Ad Set Name</h2>
+            <p className="text-sm text-gray-500 mb-2">Set Ad Set Name</p>
+
+            <div className="flex flex-wrap items-center gap-2 border rounded-md p-2">
+              {adsetParts.map((p) => (
+                <span
+                  key={p}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
+                >
+                  {p}
+                </span>
+              ))}
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Location")}>
+                + Location
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => addPart("Audience")}>
+                + Audience
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-500"
+                onClick={() => {
+                  setAdsetParts([])
+                  formik.setFieldValue("adset.name", previewName);
+
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+
+            <p className="text-sm text-gray-500 font-semibold mt-2">
+              {previewName || "Set ad set name..."}
+            </p>
+
+            <Input
+              className="mt-2 w-[300px]"
+              name="adset.name"
+              value={formik.values.adset.name}
+              onChange={(e) =>
+                formik.setFieldValue("adset.name", e.target.value)
+              }
+              placeholder="Ad Set Name"
+            />
+          </div>
+
         </CardContent>
       </Card>
     </div>

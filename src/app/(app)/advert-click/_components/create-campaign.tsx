@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { getAdAccounts } from "@/features/campaign/api";
 import { CampaignAdAccount, CampaignObjectiveItem } from "@/features/campaign/type";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type CreateCampaignProps = {
   formik: FormikValues;
@@ -20,6 +21,39 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
   const [loading, setLoading] = useState(true);
   const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([]);
   const [objectives, setObjectives] = useState<CampaignObjectiveItem[]>([]);
+
+  // Campaign name -- start
+  const [campaignParts, setCampaignParts] = useState<string[]>([]);
+  const addPart = (p: string) =>
+    setCampaignParts((x) => (x.includes(p) ? x : [...x, p]));
+
+  const previewName = campaignParts
+    .map((p) => {
+      if (p === "Objective")
+        return objectives.find(
+          (o) => o.value === formik.values.campaign.objective
+        )?.label;
+
+      if (p === "Budget")
+        return formik.values.budget_mode;
+
+      if (p === "Account")
+        return adAccount.find(
+          (a) => a.id === formik.values.selectedAdAccount
+        )?.name;
+
+      return "";
+    })
+    .filter(Boolean)
+    .join(" | ");
+  useEffect(() => {
+    if (previewName) {
+      formik.setFieldValue("campaign.name", previewName);
+    }
+  }, [previewName]);
+  // Campaign name -- end
+
+
 
   // //constant untuk objective
   const CampaignObjective: CampaignObjectiveItem[] = [
@@ -139,7 +173,7 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
               <p className="text-xs text-red-500 mt-1">{formik.errors.budget_mode}</p>
             )}
           </div>
-          
+
           {/* Budget Cost shown only when CBO */}
           {formik.values.budget_mode === "CBO" && (
             <div>
@@ -158,7 +192,7 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
                 />
               </div>
 
-              {formik.touched.campaign && formik.errors.campaign && (
+              {formik.touched.campaign?.daily_budget && formik.errors.campaign?.daily_budget && (
                 <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.daily_budget}</p>
               )}
             </div>
@@ -170,18 +204,54 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
           <div>
             <h2 className="font-semibold mb-2">Campaign Name</h2>
             <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
+
+            <div className="flex flex-wrap items-center gap-2 border rounded-md p-2">
+              {campaignParts.map((p) => (
+                <span
+                  key={p}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
+                >
+                  {p}
+                </span>
+              ))}
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Objective")}>
+                + Objective
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Budget")}>
+                + Budget
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Account")}>
+                + Account
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-500"
+                onClick={() => setCampaignParts([])}
+              >
+                Clear
+              </Button>
+            </div>
+
+            <p className="text-sm text-gray-500 font-semibold mt-2">
+              {previewName || "Set campaign name..."}
+            </p>
+
             <Input
-              name="name"
-              placeholder="Enter Campaign Name"
+              className="mt-2 w-[300px]"
+              name="campaign.name"
               value={formik.values.campaign.name}
-              onChange={formik.handleChange("campaign.name")}
-              onBlur={formik.handleBlur("campaign.name")}
-              className="w-[300px]"
+              onChange={(e) =>
+                formik.setFieldValue("campaign.name", e.target.value)
+              }
+              placeholder="Campaign Name"
             />
-            {formik.touched.campaign && formik.errors.campaign && (
-              <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.name}</p>
-            )}
           </div>
+
 
           <Separator />
         </CardContent>
