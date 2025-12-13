@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -322,7 +323,7 @@ function SidebarTrigger({
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem
-                // onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => signOut({ callbackUrl: "/login" })}
               >
                 Logout
               </DropdownMenuItem>
