@@ -15,3 +15,18 @@ export type Location = {
   supports_region: boolean;
   supports_city: boolean;
 };
+
+export type SavedAudience = {
+  id: string;
+  name: string;
+};
+
+export type AdInterest = {
+  id: string,
+  name: string,
+  audience_size_lower_bound: string,
+  audience_size_upper_bound: string,
+  path: string[],
+  description: string,
+  topic: string
+};

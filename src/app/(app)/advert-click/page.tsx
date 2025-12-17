@@ -121,7 +121,10 @@ export type InitialFormType = {
         geo_locations: {
             countries: string[];
         };
-        saved_audience_ids: string[];
+        detailed_targeting: {
+            id: string;
+            name: string;
+        }[];
         bid_strategy: string;
     };
     ad: {
@@ -152,7 +155,7 @@ const initialValues: InitialFormType = {
         name: "",
         daily_budget: 1000,
         geo_locations: { countries: ["US"] },
-        saved_audience_ids: [],
+        detailed_targeting: [],
         bid_strategy: "LOWEST_COST_WITHOUT_CAP",
     },
     ad: { name: "", creative_id: "", status: "ACTIVE", image_file: null, image_hash: "", message: "" },
@@ -211,13 +214,13 @@ export default function Component() {
                     if (!cJson.id) throw new Error("Campaign failed");
 
                     // === 2. AD SET (LOOP PER audienceId) ===
-                    for (const audienceId of values.adset.saved_audience_ids) {
+                    for (const audienceDetailedTargeting of values.adset.detailed_targeting) {
 
                         // ----------------------------------------
                         // 2A. CREATE AD SET
                         // ----------------------------------------
                         const aForm = new FormData();
-                        aForm.append("name", values.adset.name + " - " + audienceId);
+                        aForm.append("name", `${values.adset.geo_locations.countries} | ${audienceDetailedTargeting.name}`);
                         aForm.append("campaign_id", cJson.id);
                         // === BID STRATEGY LOGIC ===
                         if (values.budget_mode === "ABO") {
@@ -230,13 +233,18 @@ export default function Component() {
                         }
                         aForm.append("billing_event", "IMPRESSIONS");
 
-                        // gunakan saved audience
-                        aForm.append("audience_id", audienceId);
-
                         aForm.append(
                             "targeting",
                             JSON.stringify({
-                                geo_locations: values.adset.geo_locations,
+                                geo_locations: {
+                                    countries: ["ID"],
+                                },
+                                interests: [
+                                    {
+                                        id: audienceDetailedTargeting.id, // Coffee
+                                        name: audienceDetailedTargeting.name,
+                                    },
+                                ],
                             })
                         );
 
@@ -248,7 +256,7 @@ export default function Component() {
                         );
 
                         const aJson = await aRes.json();
-                        if (!aJson.id) throw new Error("Ad Set failed for audience: " + audienceId);
+                        if (!aJson.id) throw new Error("Ad Set failed for audience: " + audienceDetailedTargeting.name);
 
                         // ----------------------------------------
                         // 3. UPLOAD IMAGE (PER ADSET)
@@ -278,7 +286,7 @@ export default function Component() {
                         // 4. CREATE CREATIVE (PER ADSET)
                         // ----------------------------------------
                         const creativeForm = new FormData();
-                        creativeForm.append("name", values.ad.name + " - " + audienceId);
+                        creativeForm.append("name", values.ad.name);
                         creativeForm.append(
                             "object_story_spec",
                             JSON.stringify({
@@ -303,7 +311,7 @@ export default function Component() {
                         // 5. CREATE AD (PER ADSET)
                         // ----------------------------------------
                         const adForm = new FormData();
-                        adForm.append("name", values.ad.name + " - " + audienceId);
+                        adForm.append("name", values.ad.name);
                         adForm.append("adset_id", aJson.id);
                         adForm.append(
                             "creative",

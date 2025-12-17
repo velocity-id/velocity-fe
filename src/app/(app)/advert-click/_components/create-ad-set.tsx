@@ -6,16 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { getSavedAudiences, SavedAudience } from "@/features/ad-set/api";
+import { getListAdInterest } from "@/features/ad-set/api";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { AdInterest } from "@/features/ad-set/type";
 
 type CreateAdSetProps = {
   formik: FormikValues;
 };
 
 export default function CreateAdSet({ formik }: CreateAdSetProps) {
-  const [savedAudiences, setSavedAudiences] = useState<SavedAudience[]>([]);
+  const [listAdInterest, setListAdInterest] = useState<AdInterest[]>([]);
+  const [interestQuery, setInterestQuery] = useState("");
+  const [loadingInterest, setLoadingInterest] = useState(false);
+  const [limit, setLimit] = useState(20);
+
+
 
   // ad set name -- start
   const [adsetParts, setAdsetParts] = useState<string[]>([]);
@@ -28,10 +34,10 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
         return formik.values.adset.geo_locations.countries[0];
 
       if (p === "Audience")
-        return formik.values.adset.saved_audience_ids
-          .map((id: string) => savedAudiences.find((s) => s.id === id)?.name)
-          .filter(Boolean)
+        return formik.values.adset.detailed_targeting
+          .map((x: { id: string; name: string }) => x.name)
           .join(",");
+
 
       return "";
     })
@@ -46,76 +52,102 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
   // ad set name -- end
 
 
+  const searchInterest = async () => {
+    if (!interestQuery) return;
 
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await getSavedAudiences(formik.values.selectedAdAccount);
-        setSavedAudiences(data);
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      setLoadingInterest(true);
+      const data = await getListAdInterest(interestQuery, limit);
+      setListAdInterest(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingInterest(false);
     }
-
-    if (formik.values.selectedAdAccount) {
-      load();
-    }
-  }, [formik.values.selectedAdAccount]);
+  };
 
 
   return (
     <div className="w-full">
       <Card className="shadow-lg border w-full">
         <CardContent className="space-y-6 p-6">
-          <div>
-            <h2 className="font-semibold mb-2">Saved Audience</h2>
-            <p className="text-sm text-gray-500 mb-2">
-              Select Saved Audience (multiple allowed)
-            </p>
+          {/* === Detailed Targeting === */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-[300px] justify-between">
+                {formik.values.adset.detailed_targeting.length > 0
+                  ? `${formik.values.adset.detailed_targeting.length} selected`
+                  : "Choose Detailed Targeting"}
+              </Button>
+            </PopoverTrigger>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[300px] justify-between">
-                  {formik.values.adset.saved_audience_ids.length > 0
-                    ? `${formik.values.adset.saved_audience_ids.length} selected`
-                    : "Choose Saved Audience"}
+            <PopoverContent className="w-[400px] p-3 space-y-2">
+              {/* Search input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search interest (ex: sepatu, coffee)"
+                  value={interestQuery}
+                  onChange={(e) => setInterestQuery(e.target.value)}
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="w-[80px]"
+                  value={limit}
+                  onChange={(e) => setLimit(Number(e.target.value))}
+                />
+
+                <Button size="sm" onClick={searchInterest} disabled={loadingInterest}>
+                  {loadingInterest ? "..." : "Search"}
                 </Button>
-              </PopoverTrigger>
+              </div>
 
-              <PopoverContent className="w-[300px] p-2">
-                <div className="flex flex-col gap-2">
-                  {savedAudiences.map((sa) => {
-                    const checked = formik.values.adset.saved_audience_ids.includes(sa.id);
+              {/* Result list */}
+              <div className="max-h-[220px] overflow-y-auto flex flex-col gap-2">
+                {listAdInterest.map((sa) => {
+                  const checked = formik.values.adset.detailed_targeting.some(
+                    (x: { id: string, name: string }) => x.id == sa.id
+                  );
 
-                    return (
-                      <label
-                        key={sa.id}
-                        className="flex items-center gap-2 cursor-pointer p-1"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            let current = [...formik.values.adset.saved_audience_ids];
+                  return (
+                    <label
+                      key={sa.id}
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          let current = [...formik.values.adset.detailed_targeting];
 
-                            if (checked) {
-                              current = current.filter((x) => x !== sa.id);
-                            } else {
-                              current.push(sa.id);
-                            }
+                          if (checked) {
+                            current = current.filter((x) => x.id !== sa.id);
+                          } else {
+                            current.push({
+                              id: sa.id,
+                              name: sa.name,
+                            });
+                          }
 
-                            formik.setFieldValue("adset.saved_audience_ids", current);
-                          }}
-                        />
-                        <span>{sa.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+                          formik.setFieldValue("adset.detailed_targeting", current);
+                        }}
+
+                      />
+                      <span>{sa.name}</span>
+                    </label>
+                  );
+                })}
+
+                {!loadingInterest && listAdInterest.length === 0 && (
+                  <p className="text-xs text-gray-500 text-center">
+                    No result
+                  </p>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
 
 
           <Separator />
@@ -181,7 +213,7 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
 
           <Separator />
 
-          {/* Name Ad Set */}
+          {/* Ad Set Name */}
           <div>
             <h2 className="font-semibold mb-2">Ad Set Name</h2>
             <p className="text-sm text-gray-500 mb-2">Set Ad Set Name</p>
@@ -215,21 +247,22 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
               >
                 Clear
               </Button>
-            </div>
-
-            <p className="text-sm text-gray-500 font-semibold mt-2">
-              {previewName || "Set ad set name..."}
-            </p>
+            </div> 
 
             <Input
-              className="mt-2 w-[300px]"
+              className="
+                  mt-2 w-[300px]
+                  read-only:opacity-100
+                  read-only:bg-background
+                  read-only:text-foreground
+                  read-only:cursor-default
+                "
               name="adset.name"
+              readOnly
               value={formik.values.adset.name}
-              onChange={(e) =>
-                formik.setFieldValue("adset.name", e.target.value)
-              }
               placeholder="Ad Set Name"
             />
+
           </div>
 
         </CardContent>
