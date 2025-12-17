@@ -33,10 +33,10 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
       if (p === "Location")
         return formik.values.adset.geo_locations.countries[0];
 
-    if (p === "Audience")
-      return formik.values.adset.detailed_targeting
-        .map((x: {id: string; name: string }) => x.name)
-        .join(",");
+      if (p === "Audience")
+        return formik.values.adset.detailed_targeting
+          .map((x: { id: string; name: string }) => x.name)
+          .join(",");
 
 
       return "";
@@ -107,7 +107,7 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
               <div className="max-h-[220px] overflow-y-auto flex flex-col gap-2">
                 {listAdInterest.map((sa) => {
                   const checked = formik.values.adset.detailed_targeting.some(
-                    (x: {id: string, name: string}) => x.id == sa.id
+                    (x: { id: string, name: string }) => x.id == sa.id
                   );
 
                   return (
@@ -213,7 +213,7 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
 
           <Separator />
 
-          {/* Detailed Targeting */}
+          {/* Ad Set Name */}
           <div>
             <h2 className="font-semibold mb-2">Ad Set Name</h2>
             <p className="text-sm text-gray-500 mb-2">Set Ad Set Name</p>
@@ -254,14 +254,19 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
             </p>
 
             <Input
-              className="mt-2 w-[300px]"
+              className="
+                  mt-2 w-[300px]
+                  read-only:opacity-100
+                  read-only:bg-background
+                  read-only:text-foreground
+                  read-only:cursor-default
+                "
               name="adset.name"
+              readOnly
               value={formik.values.adset.name}
-              onChange={(e) =>
-                formik.setFieldValue("adset.name", e.target.value)
-              }
               placeholder="Ad Set Name"
             />
+
           </div>
 
         </CardContent>

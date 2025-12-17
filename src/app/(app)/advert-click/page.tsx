@@ -220,7 +220,7 @@ export default function Component() {
                         // 2A. CREATE AD SET
                         // ----------------------------------------
                         const aForm = new FormData();
-                        aForm.append("name", values.adset.name);
+                        aForm.append("name", `${values.adset.geo_locations.countries} | ${audienceDetailedTargeting.name}`);
                         aForm.append("campaign_id", cJson.id);
                         // === BID STRATEGY LOGIC ===
                         if (values.budget_mode === "ABO") {
