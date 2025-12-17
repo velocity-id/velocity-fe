@@ -247,11 +247,7 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
               >
                 Clear
               </Button>
-            </div>
-
-            <p className="text-sm text-gray-500 font-semibold mt-2">
-              {previewName || "Set ad set name..."}
-            </p>
+            </div> 
 
             <Input
               className="

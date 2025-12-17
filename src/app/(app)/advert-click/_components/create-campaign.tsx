@@ -234,10 +234,6 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
               </Button>
             </div>
 
-            <p className="text-sm text-gray-500 font-semibold mt-2">
-              {previewName || "Set campaign name..."}
-            </p>
-
             <Input
               className="mt-2 w-[300px]"
               name="campaign.name"
