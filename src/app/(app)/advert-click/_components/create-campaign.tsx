@@ -1,187 +1,258 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Separator } from "@/components/ui/separator"
-import { Loader2, Plus, Upload } from "lucide-react"
+import { FormikValues } from "formik";
+import { useEffect, useState } from "react";
 
-export default function CreateCampaign() {
-  const [loading, setLoading] = useState(true)
-  const [budgetCost, setBudgetCost] = useState("")
-  const [campaignParts, setCampaignParts] = useState<string[]>(["Create Date", "Campaign Budget", "Type Name"])
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { getAdAccounts } from "@/features/campaign/api";
+import { CampaignAdAccount, CampaignObjectiveItem } from "@/features/campaign/type";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useLoading } from "@/hooks/use-loading";
 
-  const addCampaignPart = (part: string) => {
-    if (!campaignParts.includes(part)) {
-      setCampaignParts([...campaignParts, part])
+type CreateCampaignProps = {
+  formik: FormikValues;
+}
+
+export default function CreateCampaign({ formik }: CreateCampaignProps) {
+  const { setLoading } = useLoading();
+  const [adAccount, setAdAccount] = useState<CampaignAdAccount[]>([]);
+  const [objectives, setObjectives] = useState<CampaignObjectiveItem[]>([]);
+
+  // Campaign name -- start
+  const [campaignParts, setCampaignParts] = useState<string[]>([]);
+  const addPart = (p: string) =>
+    setCampaignParts((x) => (x.includes(p) ? x : [...x, p]));
+
+  const previewName = campaignParts
+    .map((p) => {
+      if (p === "Objective")
+        return objectives.find(
+          (o) => o.value === formik.values.campaign.objective
+        )?.label;
+
+      if (p === "Budget")
+        return formik.values.budget_mode;
+
+      if (p === "Account")
+        return adAccount.find(
+          (a) => a.id === formik.values.selectedAdAccount
+        )?.name;
+
+      return "";
+    })
+    .filter(Boolean)
+    .join(" | ");
+  useEffect(() => {
+    if (previewName) {
+      formik.setFieldValue("campaign.name", previewName);
     }
-  }
-  const clearCampaignParts = () => setCampaignParts([])
+  }, [previewName]);
+  // Campaign name -- end
 
 
-  // simulasi loading akun
-  setTimeout(() => setLoading(false), 1500)
 
+  // //constant untuk objective
+  const CampaignObjective: CampaignObjectiveItem[] = [
+    { value: "OUTCOME_AWARENESS", label: "Awareness" },
+    { value: "OUTCOME_TRAFFIC", label: "Traffic" },
+    { value: "OUTCOME_ENGAGEMENT", label: "Engagement" },
+    { value: "OUTCOME_LEADS", label: "Leads" },
+    { value: "OUTCOME_APP_PROMOTION", label: "App Promotion" },
+    { value: "OUTCOME_SALES", label: "Sales" },
+  ];
+
+
+  //Fetch Ad Accounts
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [resAdAccount] = await Promise.all([getAdAccounts()]);
+        setAdAccount(resAdAccount);
+      } catch (err) {
+        console.error("Failed to fetch ad accounts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  //Fetch Objective
+  useEffect(() => {
+    setObjectives(CampaignObjective);
+  }, []);
+
+
+  console.log('formik di create campaign:', formik.values);
   return (
     <div className="w-full">
       <Card className="shadow-lg border w-full">
         <CardContent className="space-y-6 p-6">
+
           {/* Ad Account */}
           <div>
-              <h2 className="font-semibold mb-2">Ad Account</h2>
-              {loading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Loader2 className="animate-spin w-4 h-4" />
-                  Loading Ad Account...
-                </div>
-              ) : (
-                <p>Ad Account Loaded</p>
-              )}
-          </div>
-
-          <Separator />
-
-          {/* Campaign Type */}
-          <div>
-              <h2 className="font-semibold mb-2">Campaign Type</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Campaign Type</p>
-              <Select defaultValue="NONE">
+            <h2 className="font-semibold mb-2">Ad Account</h2>
+              <Select
+                value={formik.values.selectedAdAccount}
+                onValueChange={(val) => formik.setFieldValue("selectedAdAccount", val)}
+              >
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Campaign Type" />
+                  <SelectValue placeholder="Select Ad Account" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NONE">NONE</SelectItem>
-                  <SelectItem value="ICO_ONLY">ICO_ONLY</SelectItem>
+                  {adAccount.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            {formik.touched.adAccount && formik.errors.adAccount && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.adAccount}</p>
+            )}
           </div>
 
           <Separator />
 
           {/* Objective */}
           <div>
-              <h2 className="font-semibold mb-2">Objective</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
-              <Select defaultValue="OUTCOME_APP_PROMOTION">
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Objective" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="OUTCOME_APP_PROMOTION">App_Promotion</SelectItem>
-                  <SelectItem value="OUTCOME_AWARENESS">Awareness</SelectItem>
-                  <SelectItem value="OUTCOME_ENGAGEMENT">Engagement</SelectItem>
-                  <SelectItem value="OUTCOME_LEADS">Leads</SelectItem>
-                  <SelectItem value="OUTCOME_SALES">Sales</SelectItem>
-                  <SelectItem value="OUTCOME_TRAFFIC">Traffic</SelectItem>
-                </SelectContent>
-              </Select>
+            <h2 className="font-semibold mb-2">Objective</h2>
+            <p className="text-sm text-gray-500 mb-2">Choose Objective</p>
+            <Select
+              value={formik.values.campaign.objective}
+              onValueChange={(val) => formik.setFieldValue("campaign.objective", val)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select Objective" />
+              </SelectTrigger>
+              <SelectContent>
+                {objectives.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.campaign && formik.errors.campaign && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.objective}</p>
+            )}
           </div>
 
           <Separator />
 
-          {/* Campaign Budget */}
-          <h2 className="font-semibold mb-2">Campaign Budget</h2>
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col">
-              <p className="text-sm text-gray-500 mb-2">Set Campaign Budget</p>
-              <Select defaultValue="Daily Budget">
-                <SelectTrigger className="w-[160px] ">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Daily Budget">Daily Budget</SelectItem>
-                  <SelectItem value="Lifetime Budget">Lifetime Budget</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Budget Mode */}
+          <div>
+            <h2 className="font-semibold mb-2">Budget Mode</h2>
+            <p className="text-sm text-gray-500 mb-2">CBO or ABO</p>
 
-            <div className="flex flex-col justify-center">
-              <p className="text-sm text-gray-500 mb-2">Budget Cost</p>
-              <Input
-                placeholder="Enter Budget Cost"
-                value={budgetCost}
-                onChange={(e) => setBudgetCost(e.target.value)}
-                className="w-[160px]"
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={formik.values.budget_mode === "CBO"}
+                onCheckedChange={(checked) =>
+                  formik.setFieldValue("budget_mode", checked ? "CBO" : "ABO")
+                }
               />
+              <span className="text-sm text-gray-700">
+                {formik.values.budget_mode === "CBO" ? "CBO (Campaign Budget Optimization)" : "ABO (Ad Set Budget Optimization)"}
+              </span>
             </div>
+
+            {formik.touched.budget_mode && formik.errors.budget_mode && (
+              <p className="text-xs text-red-500 mt-1">{formik.errors.budget_mode}</p>
+            )}
           </div>
 
-          <Separator />
+          {/* Budget Cost shown only when CBO */}
+          {formik.values.budget_mode === "CBO" && (
+            <div>
+              <h2 className="font-semibold mb-2">Budget Cost</h2>
 
-          {/* Bid Strategy */}
-          <div>
-              <h2 className="font-semibold mb-2">Bid Strategy</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Bid Strategi</p>
-              <RadioGroup defaultValue="lowest">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="lowest" id="lowest" />
-                  <label htmlFor="lowest" className="text-sm">Lowest Cost</label>
-                </div>
-              </RadioGroup>
-          </div>
+              <div className="flex flex-col">
+                <p className="text-sm text-gray-500 mb-2">Daily Budget</p>
 
-          <Separator />
+                <Input
+                  name="daily_budget"
+                  type="number"
+                  placeholder="Rp"
+                  value={formik.values.campaign.daily_budget ?? ""}
+                  onChange={(e) => formik.setFieldValue("campaign.daily_budget", e.target.value)}
+                  className="w-[160px]"
+                />
+              </div>
 
-          {/* Campaign Schedule */}
-          <div>
-              <h2 className="font-semibold mb-2">Campaign Schedule</h2>
-              <p className="text-sm text-gray-500 mb-2">Choose Campaign Schedule</p>
-              <RadioGroup defaultValue="always">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="always" id="always" />
-                  <label htmlFor="always" className="text-sm">Run ads all the time</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="schedule" id="schedule" />
-                  <label htmlFor="schedule" className="text-sm">Run ads on a schedule</label>
-                </div>
-              </RadioGroup>
-          </div>
+              {formik.touched.campaign?.daily_budget && formik.errors.campaign?.daily_budget && (
+                <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.daily_budget}</p>
+              )}
+            </div>
+          )}
 
           <Separator />
-
 
           {/* Campaign Name */}
           <div>
-              <h2 className="font-semibold mb-2">Campaign Name</h2>
-              <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
+            <h2 className="font-semibold mb-2">Campaign Name</h2>
+            <p className="text-sm text-gray-500 mb-2">Set Campaign Name</p>
 
-              <div className="flex flex-wrap items-center gap-2 border rounded-md p-2">
-                {campaignParts.map((part, i) => (
-                  <span key={i} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center gap-1">
-                    {part}
-                  </span>
-                ))}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => addCampaignPart("Objective")}>Objective</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addCampaignPart("Created Date")}>Created Date</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addCampaignPart("Budget Campaign Type")}>Budget Campaign Type</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addCampaignPart("Campaign Budget")}>Campaign Budget</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addCampaignPart("Campaign Bid Strategy")}>Campaign Bid Strategy</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button variant="ghost" className="text-xs text-gray-500" onClick={clearCampaignParts}>Clear All 
-                </Button>
-              </div>
+            <div className="flex flex-wrap items-center gap-2 border rounded-md p-2">
+              {campaignParts.map((p) => (
+                <span
+                  key={p}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
+                >
+                  {p}
+                </span>
+              ))}
 
-              <p className="text-sm text-gray-500 mt-2">
-                Preview: lorem ipsum
-              </p>
+              <Button variant="ghost" size="sm" onClick={() => addPart("Objective")}>
+                + Objective
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Budget")}>
+                + Budget
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Account")}>
+                + Account
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-500"
+                onClick={() => {
+                  setCampaignParts([])
+                formik.setFieldValue("campaign.name", '');
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+
+            <p className="text-sm text-gray-500 font-semibold mt-2">
+              {previewName || "Set campaign name..."}
+            </p>
+
+            <Input
+              className="mt-2 w-[300px]"
+              name="campaign.name"
+              value={formik.values.campaign.name}
+              onChange={(e) =>
+                formik.setFieldValue("campaign.name", e.target.value)
+              }
+              placeholder="Campaign Name"
+            />
           </div>
+
 
           <Separator />
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

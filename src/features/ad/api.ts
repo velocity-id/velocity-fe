@@ -1,9 +1,9 @@
 'use client';
 import { getSession } from "next-auth/react";
-import { CampaignAdAccount } from "./type";
+import { FacebookPage } from "./type";
 
 
-export async function getAdAccounts(): Promise<CampaignAdAccount[]> {
+export async function getListPage(): Promise<FacebookPage[]> {
   try {
     const session = await getSession();
     console.log("Session in getAdAccounts:", session);
@@ -15,7 +15,7 @@ export async function getAdAccounts(): Promise<CampaignAdAccount[]> {
     const accessToken = session.accessToken;
 
     const res = await fetch(
-      `https://graph.facebook.com/v23.0/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`,
+      `https://graph.facebook.com/v24.0/me/accounts?fields=id,name&access_token=${accessToken}`,
       { method: "GET" }
     );
 
@@ -29,7 +29,7 @@ export async function getAdAccounts(): Promise<CampaignAdAccount[]> {
 
   } catch (err) {
     console.error("Error in getAdAccounts():", err);
-    throw err; // lempar lagi biar bisa ditangkap di UI
+    throw err; 
   }
 }
 

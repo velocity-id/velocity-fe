@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -296,14 +297,6 @@ function SidebarTrigger({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Settings */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/settings")}
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
 
           {/* Notification */}
           <DropdownMenu>
@@ -330,7 +323,7 @@ function SidebarTrigger({
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem
-                // onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => signOut({ callbackUrl: "/login" })}
               >
                 Logout
               </DropdownMenuItem>

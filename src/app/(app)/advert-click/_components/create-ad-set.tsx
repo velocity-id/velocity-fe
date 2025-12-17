@@ -1,346 +1,239 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { CommonHeader } from "@/components/common/common-header"
-import { Formik, Form, FieldArray, ErrorMessage } from "formik"
-import * as Yup from "yup"
+import { FormikValues } from "formik";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { getSavedAudiences, SavedAudience } from "@/features/ad-set/api";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
-const AdSetSchema = Yup.object().shape({
-  adsets: Yup.array()
-    .of(
-      Yup.object().shape({
-        location: Yup.string().required("Location is required"),
-        customAudience: Yup.string().required("Custom audience is required"),
-        ageMin: Yup.number().required().min(13).max(65),
-        ageMax: Yup.number().required().min(13).max(65),
-        gender: Yup.string().required("Gender is required"),
-        placement: Yup.string().required("Placement is required"),
-        conversionWindow: Yup.string().required("Conversion window is required"),
-        adSetName: Yup.string().required("Ad set name is required"),
-      })
-    )
-    .min(1, "At least one Ad Set is required"),
-})
+type CreateAdSetProps = {
+  formik: FormikValues;
+};
 
-const initialValues = {
-  adsets: [
-    {
-      location: "",
-      customAudience: "",
-      ageMin: 18,
-      ageMax: 35,
-      gender: "",
-      placement: "AUTOMATIC",
-      conversionWindow: "7DAYS_CLICK",
-      adSetName: "",
-    },
-  ],
-}
+export default function CreateAdSet({ formik }: CreateAdSetProps) {
+  const [savedAudiences, setSavedAudiences] = useState<SavedAudience[]>([]);
+
+  // ad set name -- start
+  const [adsetParts, setAdsetParts] = useState<string[]>([]);
+  const addPart = (p: string) =>
+    setAdsetParts((x) => (x.includes(p) ? x : [...x, p]));
+
+  const previewName = adsetParts
+    .map((p) => {
+      if (p === "Location")
+        return formik.values.adset.geo_locations.countries[0];
+
+      if (p === "Audience")
+        return formik.values.adset.saved_audience_ids
+          .map((id: string) => savedAudiences.find((s) => s.id === id)?.name)
+          .filter(Boolean)
+          .join(",");
+
+      return "";
+    })
+    .filter(Boolean)
+    .join(" | ");
+
+  useEffect(() => {
+    if (previewName) {
+      formik.setFieldValue("adset.name", previewName);
+    }
+  }, [previewName]);
+  // ad set name -- end
 
 
-export default function CreateAdSet() {
+
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getSavedAudiences(formik.values.selectedAdAccount);
+        setSavedAudiences(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (formik.values.selectedAdAccount) {
+      load();
+    }
+  }, [formik.values.selectedAdAccount]);
+
+
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={AdSetSchema}
-      onSubmit={(values) => {
-        console.log("AdSet Values:", values)
-        alert("Ad Set(s) created successfully!")
-      }}
-    >
-      {({ values, handleChange, handleBlur, setFieldValue }) => (
-        <Form className=" w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* KOLOM KIRI — FORM */}
-            <div className="lg:col-span-1">
-              <FieldArray
-                name="adsets"
-                render={(arrayHelpers) => (
-                  <>
-                    {values.adsets.map((adset, idx) => (
-                      <Card key={idx} className="shadow-lg mb-6">
-                        <CardHeader className="flex justify-between items-center">
-                          <CardTitle>Ad Set {idx + 1}</CardTitle>
-                          {/* Tombol hapus jika lebih dari 1 */}
-                          {values.adsets.length > 1 && (
-                            <Button
-                              variant="destructive"
-                              type="button"
-                              onClick={() => arrayHelpers.remove(idx)}
-                            >
-                              Remove
-                            </Button>
-                          )}
-                        </CardHeader>
+    <div className="w-full">
+      <Card className="shadow-lg border w-full">
+        <CardContent className="space-y-6 p-6">
+          <div>
+            <h2 className="font-semibold mb-2">Saved Audience</h2>
+            <p className="text-sm text-gray-500 mb-2">
+              Select Saved Audience (multiple allowed)
+            </p>
 
-                        <CardContent className="space-y-4">
-                          {/* LOCATION */}
-                          <div className="space-y-2">
-                            <Label>Location</Label>
-                            <Input
-                              name={`adsets.${idx}.location`}
-                              placeholder="e.g. Indonesia"
-                              value={adset.location}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                            />
-                            <ErrorMessage
-                              name={`adsets.${idx}.location`}
-                              component="p"
-                              className="text-red-500 text-sm"
-                            />
-                          </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[300px] justify-between">
+                  {formik.values.adset.saved_audience_ids.length > 0
+                    ? `${formik.values.adset.saved_audience_ids.length} selected`
+                    : "Choose Saved Audience"}
+                </Button>
+              </PopoverTrigger>
 
-                          {/* CUSTOM AUDIENCE */}
-                          <div className="space-y-2">
-                            <Label>Custom Audience</Label>
-                            <Input
-                              name={`adsets.${idx}.customAudience`}
-                              placeholder="e.g. Lookalike Audience ID"
-                              value={adset.customAudience}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                            />
-                            <ErrorMessage
-                              name={`adsets.${idx}.customAudience`}
-                              component="p"
-                              className="text-red-500 text-sm"
-                            />
-                          </div>
+              <PopoverContent className="w-[300px] p-2">
+                <div className="flex flex-col gap-2">
+                  {savedAudiences.map((sa) => {
+                    const checked = formik.values.adset.saved_audience_ids.includes(sa.id);
 
-                          {/* AGE RANGE */}
-                          <div className="flex gap-4">
-                            <div className="space-y-2 w-1/2">
-                              <Label>Min Age</Label>
-                              <Input
-                                type="number"
-                                name={`adsets.${idx}.ageMin`}
-                                value={adset.ageMin}
-                                onChange={handleChange}
-                              />
-                              <ErrorMessage
-                                name={`adsets.${idx}.ageMin`}
-                                component="p"
-                                className="text-red-500 text-sm"
-                              />
-                            </div>
+                    return (
+                      <label
+                        key={sa.id}
+                        className="flex items-center gap-2 cursor-pointer p-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            let current = [...formik.values.adset.saved_audience_ids];
 
-                            <div className="space-y-2 w-1/2">
-                              <Label>Max Age</Label>
-                              <Input
-                                type="number"
-                                name={`adsets.${idx}.ageMax`}
-                                value={adset.ageMax}
-                                onChange={handleChange}
-                              />
-                              <ErrorMessage
-                                name={`adsets.${idx}.ageMax`}
-                                component="p"
-                                className="text-red-500 text-sm"
-                              />
-                            </div>
-                          </div>
+                            if (checked) {
+                              current = current.filter((x) => x !== sa.id);
+                            } else {
+                              current.push(sa.id);
+                            }
 
-                          {/* GENDER */}
-                          <div className="space-y-2">
-                            <Label>Gender</Label>
-                            <Select
-                              value={adset.gender}
-                              onValueChange={(val) =>
-                                setFieldValue(`adsets.${idx}.gender`, val)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select gender" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="MEN">Men</SelectItem>
-                                <SelectItem value="WOMEN">Women</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                            formik.setFieldValue("adset.saved_audience_ids", current);
+                          }}
+                        />
+                        <span>{sa.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
-                          {/* PLACEMENT */}
-                          <div className="space-y-2">
-                            <Label>Placement</Label>
-                            <Select
-                              value={adset.placement}
-                              onValueChange={(val) =>
-                                setFieldValue(`adsets.${idx}.placement`, val)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select placement" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="AUTOMATIC">
-                                  Automatic Placement (Recommended)
-                                </SelectItem>
-                                <SelectItem value="MANUAL">
-                                  Manual Placement
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
 
-                          {/* CONVERSION WINDOW */}
-                          <div className="space-y-2">
-                            <Label>Conversion Window</Label>
-                            <Select
-                              value={adset.conversionWindow}
-                              onValueChange={(val) =>
-                                setFieldValue(
-                                  `adsets.${idx}.conversionWindow`,
-                                  val
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select conversion window" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="7DAYS_CLICK">
-                                  7 Days Click or 1 Day View
-                                </SelectItem>
-                                <SelectItem value="1DAY_CLICK">
-                                  1 Day Click
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+          <Separator />
 
-                          {/* AD SET NAME */}
-                          <div className="space-y-2">
-                            <Label>Ad Set Name</Label>
-                            <Input
-                              name={`adsets.${idx}.adSetName`}
-                              placeholder="e.g. Indonesia-18-35-Men & Women"
-                              value={adset.adSetName}
-                              onChange={handleChange}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+          {/* === Daily Budget === */}
+          {formik.values.budget_mode === "ABO" ? (
+            <div>
+              <h2 className="font-semibold mb-2">Daily Budget</h2>
+              <p className="text-sm text-gray-500 mb-2">Enter Daily Budget</p>
 
-                    {/* Tombol tambah ad set baru */}
-                    {/* <Button
-                      variant="default"
-                      type="button"
-                      onClick={() =>
-                        arrayHelpers.push({
-                          location: "",
-                          customAudience: "",
-                          ageMin: 18,
-                          ageMax: 35,
-                          gender: "",
-                          placement: "AUTOMATIC",
-                          conversionWindow: "7DAYS_CLICK",
-                          adSetName: "",
-                        })
-                      }
-                    >
-                      + Add More Ad Set
-                    </Button> */}
-                  </>
-                )}
+              <Input
+                type="number"
+                min={100000}
+                name="adset.daily_budget"
+                placeholder="Daily Budget"
+                value={formik.values.adset.daily_budget}
+                onChange={(e) => formik.setFieldValue("adset.daily_budget", Number(e.target.value))}
+                onBlur={formik.handleBlur("adset.daily_budget")}
+                className="w-[200px]"
               />
 
-              <Separator className="my-6" />
+              {formik.touched.adset?.daily_budget && formik.errors.adset?.daily_budget && (
+                <p className="text-xs text-red-500 mt-1">{formik.errors.adset.daily_budget}</p>
+              )}
+            </div>
 
-              <Button type="submit" className="w-full">
-                Submit All Ad Sets
+          ) : null}
+
+          <Separator />
+
+          {/* === Geo Location - Countries === */}
+          <div>
+            <h2 className="font-semibold mb-2">Country Targeting</h2>
+            <p className="text-sm text-gray-500 mb-2">Select Country</p>
+
+            <Select
+              value={formik.values.adset.geo_locations.countries[0]}
+              onValueChange={(val) =>
+                formik.setFieldValue("adset.geo_locations.countries", [val])
+              }
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select Country" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="US">United States</SelectItem>
+                <SelectItem value="ID">Indonesia</SelectItem>
+                <SelectItem value="SG">Singapore</SelectItem>
+                <SelectItem value="MY">Malaysia</SelectItem>
+                <SelectItem value="PH">Philippines</SelectItem>
+                <SelectItem value="IN">India</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {formik.touched.adset?.geo_locations?.countries &&
+              formik.errors.adset?.geo_locations?.countries && (
+                <p className="text-xs text-red-500 mt-1">
+                  {formik.errors.adset.geo_locations.countries}
+                </p>
+              )}
+          </div>
+
+          <Separator />
+
+          {/* Name Ad Set */}
+          <div>
+            <h2 className="font-semibold mb-2">Ad Set Name</h2>
+            <p className="text-sm text-gray-500 mb-2">Set Ad Set Name</p>
+
+            <div className="flex flex-wrap items-center gap-2 border rounded-md p-2">
+              {adsetParts.map((p) => (
+                <span
+                  key={p}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs"
+                >
+                  {p}
+                </span>
+              ))}
+
+              <Button variant="ghost" size="sm" onClick={() => addPart("Location")}>
+                + Location
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => addPart("Audience")}>
+                + Audience
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-500"
+                onClick={() => {
+                  setAdsetParts([])
+                  formik.setFieldValue("adset.name", previewName);
+
+                }}
+              >
+                Clear
               </Button>
             </div>
 
-           
-            {/* KOLOM KANAN — SPLIT SUMMARY */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-4 shadow-md">
-                <CardHeader>
-                  <CardTitle>Ad Set Split Summary</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Check your ad set split summary
-                  </p>
-                </CardHeader>
+            <p className="text-sm text-gray-500 font-semibold mt-2">
+              {previewName || "Set ad set name..."}
+            </p>
 
-                <CardContent className="space-y-4">
-                  {/* Audience Targeting Switch */}
-                  <div className="flex items-center justify-start gap-x-4">
-                    <Switch defaultChecked />
-                   <div className="flex flex-col">
-                    <span>Audience Targeting</span>
-                   </div>
-                    <span className="ml-auto font-semibold">
-                      Audience Variations
-                    </span>
-                  </div>
-
-                  {/* Custom Audience */}
-                  <div className="flex items-center justify-start gap-x-4">
-                    <Switch defaultChecked />
-                  <div className="flex flex-col">
-                    <span>Custom Audience</span>
-                  </div>
-                    <span className="ml-auto font-semibold">
-                      {values.adsets.length * 5} Variation
-                    </span>
-                  </div>
-
-                  {/* Detail Targeting */}
-                  <div className="flex items-center justify-start gap-x-4">
-                    <Switch defaultChecked />
-                   <div className="flex flex-col">
-                    <span>Detail Targeting</span>
-                  </div>
-                    <span className="ml-auto text-gray-500">-</span>
-                  </div>
-
-                  <Separator />
-
-                  {/* Total Ad Set */}
-                  <div className="flex items-center justify-between">
-                    <span>Total ad set</span>
-                    <span className="font-semibold">{values.adsets.length}</span>
-                  </div>
-
-                  {/* Budget Type */}
-                  <div className="flex items-center justify-between">
-                    <span>Budget Type</span>
-                    <Select defaultValue="DAILY">
-                      <SelectTrigger className="w-[130px]">
-                        <SelectValue placeholder="Daily Budget" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="DAILY">Daily Budget</SelectItem>
-                        <SelectItem value="LIFETIME">Lifetime Budget</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Total Budget */}
-                  <div className="flex items-center justify-between">
-                    <span>Total Budget</span>
-                    <Input
-                      type="number"
-                      placeholder="3,320,000"
-                      className="w-[130px]"
-                    />
-                  </div>
-
-                  <Button className="w-full mt-4">Check Audience Variation</Button>
-                </CardContent>
-              </Card>
-            </div>
+            <Input
+              className="mt-2 w-[300px]"
+              name="adset.name"
+              value={formik.values.adset.name}
+              onChange={(e) =>
+                formik.setFieldValue("adset.name", e.target.value)
+              }
+              placeholder="Ad Set Name"
+            />
           </div>
-        </Form>
-      )}
-    </Formik>
-  )
+
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

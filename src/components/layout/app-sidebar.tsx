@@ -44,15 +44,6 @@ const items: SidebarItem[] = [
     url: "/dashboard",
   },
   {
-    key: "user-management",
-    title: "User Management",
-    icon: Users,
-    items: [
-      { key: "all-users", title: "All Users", url: "/user-management" },
-      { key: "create-user", title: "Create User", url: "/user-management/create" },
-    ],
-  },
-  {
     key: "advert-click",
     title: "Advert Click",
     icon: Layers,
@@ -64,6 +55,12 @@ const items: SidebarItem[] = [
     icon: User,
     url: "/profile",
   },
+  // {
+  //   key: "forecasting",
+  //   title: "Forecasting",
+  //   icon: Layers,
+  //   url: "/forecasting",
+  // },
 ];
 
 export function AppSidebar() {

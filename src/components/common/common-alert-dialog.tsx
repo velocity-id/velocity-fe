@@ -12,6 +12,12 @@ import {
     AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
+import {
+    CheckCircle,
+    AlertTriangle,
+    Info,
+    XCircle,
+} from "lucide-react"
 
 type AlertType = "success" | "warning" | "error" | "info"
 
@@ -25,6 +31,13 @@ interface CommonAlertDialogProps {
     onConfirm?: () => void
 }
 
+const iconMap = {
+    success: CheckCircle,
+    warning: AlertTriangle,
+    error: XCircle,
+    info: Info,
+}
+
 export function CommonAlertDialog({
     open,
     onOpenChange,
@@ -34,27 +47,30 @@ export function CommonAlertDialog({
     confirmText = "OK",
     onConfirm,
 }: CommonAlertDialogProps) {
+
     const colorClasses = {
-        success: "border-green-500 text-green-600",
-        warning: "border-yellow-500 text-yellow-600",
-        error: "border-red-500 text-red-600",
-        info: "border-blue-500 text-blue-600",
+        success: "text-green-600",
+        warning: "text-yellow-600",
+        error: "text-red-600",
+        info: "text-blue-600",
     }
+
+    const Icon = iconMap[type]
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle
-                        className={cn(
-                            "text-lg font-semibold border-l-4 pl-3",
-                            colorClasses[type]
-                        )}
-                    >
-                        {title}
+                    <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold">
+                        <Icon className={cn("w-5 h-5", colorClasses[type])} />
+                        <span>{title}</span>
                     </AlertDialogTitle>
-                    <AlertDialogDescription>{description}</AlertDialogDescription>
+
+                    {description && (
+                        <AlertDialogDescription>{description}</AlertDialogDescription>
+                    )}
                 </AlertDialogHeader>
+
                 <AlertDialogFooter>
                     <AlertDialogAction
                         className={cn(
