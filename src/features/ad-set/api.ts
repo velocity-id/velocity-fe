@@ -1,9 +1,5 @@
 import { getSession } from "next-auth/react";
-
-export type SavedAudience = {
-  id: string;
-  name: string;
-};
+import { AdInterest, SavedAudience } from "./type";
 
 
 export async function getCustomAudiences(adAccountId: string) {
@@ -70,6 +66,35 @@ export async function getSavedAudiences(adAccountId: string): Promise<SavedAudie
     const accessToken = session.accessToken;
 
     const url = `https://graph.facebook.com/v24.0/${adAccountId}/saved_audiences?fields=id,name&access_token=${accessToken}`;
+
+    const res = await fetch(url, { method: "GET" });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Failed to fetch saved audiences: ${res.status} - ${errorText}`);
+    }
+
+    const data = await res.json();
+    return data.data || [];
+
+  } catch (err) {
+    console.error("Error in getSavedAudiences():", err);
+    throw err;
+  }
+}
+
+export async function getListAdInterest(label: string, limit: number): Promise<AdInterest[]> {
+  try {
+    const session = await getSession();
+    console.log("Session in getSavedAudiences:", session);
+
+    if (!session?.accessToken) {
+      throw new Error("No Facebook access token in session");
+    }
+
+    const accessToken = session.accessToken;
+
+    const url = `https://graph.facebook.com/v24.0/search?type=adinterest&q=${label}&limit=${limit}&access_token=${accessToken}`;
 
     const res = await fetch(url, { method: "GET" });
 
