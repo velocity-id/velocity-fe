@@ -35,35 +35,102 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchCampaigns } from "@/features/dashboard/api";
 import { Campaign } from "@/features/dashboard/type";
+import { fetchInsights } from "@/features/dashboard/api";
+import { useEffect } from "react";
+import { getListPage } from "@/features/ad/api";
+import { getAdAccounts } from "@/features/campaign/api";
+
+type ChartPoint = {
+  date: string;
+  spend: number;
+  clicks: number;
+  impressions: number;
+};
 
 
 export default function DashboardPage() {
   const [range, setRange] = React.useState<"7d" | "30d">("7d");
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
-  const [chartData, setChartData] = React.useState<[]>([]);
+  const [chartData, setChartData] = React.useState<ChartPoint[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [totalSpend, setTotalSpend] = React.useState(0);
+  const [totalClicks, setTotalClicks] = React.useState(0);
+  const [totalImpressions, setTotalImpressions] = React.useState(0);
+  const [adAccounts, setAdAccounts] = React.useState<
+    { id: string; name: string }[]
+  >([]);
+  const [selectedAdAccount, setSelectedAdAccount] =
+    React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const loadAdAccounts = async () => {
+      const [resAdAccount] = await Promise.all([getAdAccounts()]);
+      setAdAccounts(resAdAccount);
+
+      // auto select pertama
+      if (resAdAccount.length > 0) {
+        setSelectedAdAccount(resAdAccount[0].id);
+      }
+    };
+
+    loadAdAccounts();
+  }, []);
+
+
+  useEffect(() => {
+    const loadInsights = async () => {
+      if (selectedAdAccount != null) {
+        const data = await fetchInsights(selectedAdAccount!, range);
+        const chart = data.map((d) => ({
+          date: d.date_start,
+          spend: Number(d.spend || 0),
+          clicks: Number(d.clicks || 0),
+          impressions: Number(d.impressions || 0),
+        }));
+
+        setChartData(chart);
+        setTotalSpend(chart.reduce((s, d) => s + d.spend, 0));
+        setTotalClicks(chart.reduce((s, d) => s + d.clicks, 0));
+        setTotalImpressions(chart.reduce((s, d) => s + d.impressions, 0));
+
+      }
+
+    };
+
+    loadInsights();
+  }, [range]);
+
+  useEffect(() => {
+    if (!selectedAdAccount) return;
+
     const load = async () => {
       setLoading(true);
 
-      const [campaignRes] = await Promise.all([
-        fetchCampaigns('1382299553408417'),
-      ]);
+      const campaigns = await fetchCampaigns(selectedAdAccount);
+      setCampaigns(campaigns);
 
-      setCampaigns(campaignRes);
+      const data = await fetchInsights(selectedAdAccount, range);
+
+      const chart = data.map((d) => ({
+        date: d.date_start,
+        spend: Number(d.spend || 0),
+        clicks: Number(d.clicks || 0),
+        impressions: Number(d.impressions || 0),
+      }));
+
+      setChartData(chart);
+      setTotalSpend(chart.reduce((s, d) => s + d.spend, 0));
+      setTotalClicks(chart.reduce((s, d) => s + d.clicks, 0));
+      setTotalImpressions(chart.reduce((s, d) => s + d.impressions, 0));
+
       setLoading(false);
     };
 
     load();
-  }, [range]);
+  }, [selectedAdAccount, range]);
 
   // === Statistik ===
   const totalCampaigns = campaigns.length;
-  const totalClicks = 0;
-  const totalImpressions = 0;
-
   const prevCampaigns = totalCampaigns - 1;
   const campaignChange = prevCampaigns > 0 ? ((totalCampaigns - prevCampaigns) / prevCampaigns) * 100 : 0;
 
@@ -107,6 +174,27 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500">
             Pantau performa campaign dan aktivitas iklanmu dari Meta Ads
           </p>
+          <div>
+            <h2 className="font-semibold mb-2">Ad Account</h2>
+
+            <Select
+              value={selectedAdAccount ?? ""}
+              onValueChange={(val) => setSelectedAdAccount(val)}
+            >
+              <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Select Ad Account" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {adAccounts.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+          </div>
         </div>
 
         {/* === Statistik Cards (2 jajar) === */}
@@ -243,8 +331,8 @@ export default function DashboardPage() {
                             c.status === "ACTIVE"
                               ? "success"
                               : c.status === "PAUSED"
-                              ? "secondary"
-                              : "outline"
+                                ? "secondary"
+                                : "outline"
                           }
                         >
                           {c.status}
