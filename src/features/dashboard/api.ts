@@ -12,7 +12,7 @@ export async function fetchCampaigns(adAcountId: string): Promise<Campaign[]> {
     throw new Error("Unauthorized");
   }
 
-  const url = new URL(`${GRAPH_URL}/act_${adAcountId}/campaigns`);
+  const url = new URL(`${GRAPH_URL}/${adAcountId}/campaigns`);
   url.search = new URLSearchParams({
     fields: "id,name,objective,status,created_time",
     limit: "100",
@@ -57,7 +57,7 @@ export async function fetchInsights(
 
   const date_preset = range === "30d" ? "last_30d" : "last_7d";
 
-  const url = new URL(`${GRAPH_URL}/act_${adAccountId}/insights`);
+  const url = new URL(`${GRAPH_URL}/${adAccountId}/insights`);
   url.search = new URLSearchParams({
     fields: "date_start,spend,clicks,impressions",
     date_preset,
