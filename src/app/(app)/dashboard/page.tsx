@@ -35,16 +35,28 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchCampaigns } from "@/features/dashboard/api";
 import { Campaign } from "@/features/dashboard/type";
+import { fetchInsights } from "@/features/dashboard/api";
+import { useEffect } from "react";
+
+type ChartPoint = {
+  date: string;
+  spend: number;
+  clicks: number;
+  impressions: number;
+};
 
 
 export default function DashboardPage() {
   const [range, setRange] = React.useState<"7d" | "30d">("7d");
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
-  const [chartData, setChartData] = React.useState<[]>([]);
+  const [chartData, setChartData] = React.useState<ChartPoint[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [totalSpend, setTotalSpend] = React.useState(0);
+  const [totalClicks, setTotalClicks] = React.useState(0);
+  const [totalImpressions, setTotalImpressions] = React.useState(0);
 
-  React.useEffect(() => {
+
+  useEffect(() => {
     const load = async () => {
       setLoading(true);
 
@@ -58,12 +70,29 @@ export default function DashboardPage() {
 
     load();
   }, [range]);
+  
+  useEffect(() => {
+  const loadInsights = async () => {
+    const data = await fetchInsights("1570550344300399", range);
+
+    const chart = data.map((d) => ({
+      date: d.date_start,
+      spend: Number(d.spend || 0),
+      clicks: Number(d.clicks || 0),
+      impressions: Number(d.impressions || 0),
+    }));
+
+    setChartData(chart);
+    setTotalSpend(chart.reduce((s, d) => s + d.spend, 0));
+    setTotalClicks(chart.reduce((s, d) => s + d.clicks, 0));
+    setTotalImpressions(chart.reduce((s, d) => s + d.impressions, 0));
+  };
+
+  loadInsights();
+}, [range]);
 
   // === Statistik ===
   const totalCampaigns = campaigns.length;
-  const totalClicks = 0;
-  const totalImpressions = 0;
-
   const prevCampaigns = totalCampaigns - 1;
   const campaignChange = prevCampaigns > 0 ? ((totalCampaigns - prevCampaigns) / prevCampaigns) * 100 : 0;
 
