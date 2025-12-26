@@ -10,6 +10,7 @@ import { getListAdInterest } from "@/features/ad-set/api";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { AdInterest } from "@/features/ad-set/type";
+import { formatIDR } from "@/lib/utils";
 
 type CreateAdSetProps = {
   formik: FormikValues;
@@ -66,6 +67,14 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
     }
   };
 
+  // 🔽 ADD: helper buat cek apakah semua result sudah ke-select
+  const allSelected =
+    listAdInterest.length > 0 &&
+    listAdInterest.every((sa) =>
+      formik.values.adset.detailed_targeting.some(
+        (x: { id: string }) => x.id === sa.id
+      )
+    );
 
   return (
     <div className="w-full">
@@ -93,22 +102,67 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
                   type="number"
                   min={1}
                   max={100}
-                  className="w-[80px]"
+                  className="w-[150px]"
                   value={limit}
                   onChange={(e) => setLimit(Number(e.target.value))}
                 />
 
-                <Button size="sm" onClick={searchInterest} disabled={loadingInterest}>
+                <Button
+                  size="sm"
+                  onClick={searchInterest}
+                  disabled={loadingInterest}
+                >
                   {loadingInterest ? "..." : "Search"}
                 </Button>
               </div>
 
+              {/* 🔽 ADD: Select All Button */}
+              {listAdInterest.length > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      let current = [...formik.values.adset.detailed_targeting];
+
+                      if (allSelected) {
+                        // Unselect semua hasil search
+                        current = current.filter(
+                          (x) =>
+                            !listAdInterest.some(
+                              (sa) => sa.id === x.id
+                            )
+                        );
+                      } else {
+                        // Select semua hasil search
+                        listAdInterest.forEach((sa) => {
+                          if (!current.some((x) => x.id === sa.id)) {
+                            current.push({
+                              id: sa.id,
+                              name: sa.name,
+                            });
+                          }
+                        });
+                      }
+
+                      formik.setFieldValue(
+                        "adset.detailed_targeting",
+                        current
+                      );
+                    }}
+                  >
+                    {allSelected ? "Unselect All" : "Select All"}
+                  </Button>
+                </div>
+              )}
+
               {/* Result list */}
               <div className="max-h-[220px] overflow-y-auto flex flex-col gap-2">
                 {listAdInterest.map((sa) => {
-                  const checked = formik.values.adset.detailed_targeting.some(
-                    (x: { id: string, name: string }) => x.id == sa.id
-                  );
+                  const checked =
+                    formik.values.adset.detailed_targeting.some(
+                      (x: { id: string }) => x.id === sa.id
+                    );
 
                   return (
                     <label
@@ -119,10 +173,14 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
                         type="checkbox"
                         checked={checked}
                         onChange={() => {
-                          let current = [...formik.values.adset.detailed_targeting];
+                          let current = [
+                            ...formik.values.adset.detailed_targeting,
+                          ];
 
                           if (checked) {
-                            current = current.filter((x) => x.id !== sa.id);
+                            current = current.filter(
+                              (x) => x.id !== sa.id
+                            );
                           } else {
                             current.push({
                               id: sa.id,
@@ -130,9 +188,11 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
                             });
                           }
 
-                          formik.setFieldValue("adset.detailed_targeting", current);
+                          formik.setFieldValue(
+                            "adset.detailed_targeting",
+                            current
+                          );
                         }}
-
                       />
                       <span>{sa.name}</span>
                     </label>
@@ -154,24 +214,35 @@ export default function CreateAdSet({ formik }: CreateAdSetProps) {
 
           {/* === Daily Budget === */}
           {formik.values.budget_mode === "ABO" ? (
-            <div>
-              <h2 className="font-semibold mb-2">Daily Budget</h2>
-              <p className="text-sm text-gray-500 mb-2">Enter Daily Budget</p>
+            <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-gray-700">Daily Budget</p>
 
-              <Input
-                type="number"
-                min={100000}
-                name="adset.daily_budget"
-                placeholder="Daily Budget"
-                value={formik.values.adset.daily_budget}
-                onChange={(e) => formik.setFieldValue("adset.daily_budget", Number(e.target.value))}
-                onBlur={formik.handleBlur("adset.daily_budget")}
-                className="w-[200px]"
-              />
+                <div className="flex items-center w-[260px] rounded-md border bg-background">
+                  <span className="px-3 text-sm text-gray-500 border-r">Rp</span>
 
-              {formik.touched.adset?.daily_budget && formik.errors.adset?.daily_budget && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.adset.daily_budget}</p>
-              )}
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={formatIDR(formik.values.adset.daily_budget)}
+                    onChange={(e) => {
+                      // SIMPAN RAW ANGKA SAJA
+                      const raw = e.target.value.replace(/\D/g, "");
+                      formik.setFieldValue("adset.daily_budget", raw);
+                    }}
+                    className="
+                      border-0
+                      rounded-none
+                      focus-visible:ring-0
+                      focus-visible:ring-offset-0
+                      text-right
+                      font-medium
+                    "
+                  />
+                </div>
+                <p className="text-xs text-gray-400">
+                  Minimum budget Rp 100.000 / hari
+                </p>
             </div>
 
           ) : null}
