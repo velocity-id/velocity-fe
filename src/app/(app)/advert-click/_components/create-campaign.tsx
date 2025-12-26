@@ -3,6 +3,7 @@
 import { FormikValues } from "formik";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,9 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { getAdAccounts } from "@/features/campaign/api";
 import { CampaignAdAccount, CampaignObjectiveItem } from "@/features/campaign/type";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useLoading } from "@/hooks/use-loading";
+import { formatIDR } from "@/lib/utils";
 
 type CreateCampaignProps = {
   formik: FormikValues;
@@ -170,25 +170,36 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
 
           {/* Budget Cost shown only when CBO */}
           {formik.values.budget_mode === "CBO" && (
-            <div>
-              <h2 className="font-semibold mb-2">Budget Cost</h2>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium text-gray-700">Daily Budget</p>
 
-              <div className="flex flex-col">
-                <p className="text-sm text-gray-500 mb-2">Daily Budget</p>
+              <div className="flex items-center w-[260px] rounded-md border bg-background">
+                <span className="px-3 text-sm text-gray-500 border-r">Rp</span>
 
                 <Input
-                  name="daily_budget"
-                  type="number"
-                  placeholder="Rp"
-                  value={formik.values.campaign.daily_budget ?? ""}
-                  onChange={(e) => formik.setFieldValue("campaign.daily_budget", e.target.value)}
-                  className="w-[160px]"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={formatIDR(formik.values.campaign.daily_budget)}
+                  onChange={(e) => {
+                    // SIMPAN RAW ANGKA SAJA
+                    const raw = e.target.value.replace(/\D/g, "");
+                    formik.setFieldValue("campaign.daily_budget", raw);
+                  }}
+                  className="
+                    border-0
+                    rounded-none
+                    focus-visible:ring-0
+                    focus-visible:ring-offset-0
+                    text-right
+                    font-medium
+                  "
                 />
               </div>
 
-              {formik.touched.campaign?.daily_budget && formik.errors.campaign?.daily_budget && (
-                <p className="text-xs text-red-500 mt-1">{formik.errors.campaign.daily_budget}</p>
-              )}
+              <p className="text-xs text-gray-400">
+                Minimum budget Rp 100.000 / hari
+              </p>
             </div>
           )}
 
@@ -227,7 +238,7 @@ export default function CreateCampaign({ formik }: CreateCampaignProps) {
                 className="text-gray-500"
                 onClick={() => {
                   setCampaignParts([])
-                formik.setFieldValue("campaign.name", '');
+                  formik.setFieldValue("campaign.name", '');
                 }}
               >
                 Clear
