@@ -1,44 +1,40 @@
 "use client";
 
-import * as React from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import { getAdAccounts } from "@/features/campaign/api";
+import { fetchCampaigns, fetchInsights } from "@/features/dashboard/api";
+import { Campaign } from "@/features/dashboard/type";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Target,
+  CreditCard,
   Layers,
   Megaphone,
-  TrendingUp,
-  TrendingDown,
-  CreditCard,
+  Target
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { fetchCampaigns } from "@/features/dashboard/api";
-import { Campaign } from "@/features/dashboard/type";
-import { fetchInsights } from "@/features/dashboard/api";
+import * as React from "react";
 import { useEffect } from "react";
-import { getListPage } from "@/features/ad/api";
-import { getAdAccounts } from "@/features/campaign/api";
+import {
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type ChartPoint = {
   date: string;
@@ -131,35 +127,29 @@ export default function DashboardPage() {
 
   // === Statistik ===
   const totalCampaigns = campaigns.length;
-  const prevCampaigns = totalCampaigns - 1;
-  const campaignChange = prevCampaigns > 0 ? ((totalCampaigns - prevCampaigns) / prevCampaigns) * 100 : 0;
 
   const stats = [
     {
       title: "Total Campaign",
       value: totalCampaigns,
-      change: campaignChange.toFixed(1),
       icon: <Target className="w-6 h-6 text-blue-500" />,
       bg: "bg-blue-100",
     },
     {
       title: "Total Spend (Rp)",
       value: '0',
-      change: '0',
       icon: <CreditCard className="w-6 h-6 text-green-500" />,
       bg: "bg-green-100",
     },
     {
       title: "Total Clicks",
       value: loading ? "-" : totalClicks,
-      change: '0',
       icon: <Megaphone className="w-6 h-6 text-purple-500" />,
       bg: "bg-purple-100",
     },
     {
       title: "Total Impressions",
       value: loading ? "-" : totalImpressions,
-      change: '0',
       icon: <Layers className="w-6 h-6 text-orange-500" />,
       bg: "bg-orange-100",
     },
@@ -200,10 +190,6 @@ export default function DashboardPage() {
         {/* === Statistik Cards (2 jajar) === */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {stats.map((item, i) => {
-            const isPositive = parseFloat(item.change) >= 0;
-            const TrendIcon = isPositive ? TrendingUp : TrendingDown;
-            const trendColor = isPositive ? "text-green-600" : "text-red-600";
-
             return (
               <motion.div
                 key={i}
@@ -225,15 +211,6 @@ export default function DashboardPage() {
                     <p className="text-2xl font-semibold text-slate-900 mt-1">
                       {item.value}
                     </p>
-
-                    {/* Trend indicator */}
-                    <div className="flex items-center gap-1 mt-2">
-                      <TrendIcon className={`w-4 h-4 ${trendColor}`} />
-                      <span className={`text-sm font-medium ${trendColor}`}>
-                        {isPositive ? "+" : ""}
-                        {item.change}%
-                      </span>
-                    </div>
                   </div>
 
                   <div className={`rounded-xl p-3 ${item.bg}`}>
